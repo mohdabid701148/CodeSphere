@@ -9,6 +9,7 @@ export default function IntegrationsPage() {
   const [isEditingGithub, setIsEditingGithub] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [isSyncingGithub, setIsSyncingGithub] = useState(false);
+  const [isSyncingCodeforces, setIsSyncingCodeforces] = useState(false);
 
   const showStatus = (type, text) => {
     setStatusMsg({ type, text });
@@ -103,7 +104,19 @@ export default function IntegrationsPage() {
       setIsSyncingGithub(false);
     }
   };
-  const codeforcesLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending';
+  const codeforcesLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending' || isSyncingCodeforces;
+
+  const handleSyncCodeforces = async () => {
+    setIsSyncingCodeforces(true);
+    try {
+      await syncService.syncPlatform('codeforces');
+      showStatus('success', 'Codeforces statistics synchronized successfully.');
+    } catch (err) {
+      showStatus('error', err.response?.data?.message || 'Codeforces sync failed.');
+    } finally {
+      setIsSyncingCodeforces(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -299,13 +312,22 @@ export default function IntegrationsPage() {
                     Sync: {codeforcesConn.lastSync ? new Date(codeforcesConn.lastSync).toLocaleDateString() : 'Never'}
                   </span>
                 </div>
-                <button
-                  disabled={codeforcesLoading}
-                  onClick={() => handleDisconnect('codeforces')}
-                  className="w-full py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
-                >
-                  {codeforcesLoading ? 'Processing...' : 'Disconnect Handle'}
-                </button>
+                <div className="space-y-3">
+                  <button
+                    disabled={codeforcesLoading}
+                    onClick={handleSyncCodeforces}
+                    className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition duration-200 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isSyncingCodeforces ? '🔄 Syncing...' : '🔄 Sync Codeforces'}
+                  </button>
+                  <button
+                    disabled={codeforcesLoading}
+                    onClick={() => handleDisconnect('codeforces')}
+                    className="w-full py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
+                  >
+                    {codeforcesLoading ? 'Processing...' : 'Disconnect Handle'}
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">

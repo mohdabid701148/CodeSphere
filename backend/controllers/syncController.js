@@ -115,6 +115,7 @@ const syncCodeforces = async (userId, username) => {
         rating: info.rating || 0,
         maxRating: info.maxRating || 0,
         rank: info.rank || 'Unrated',
+        maxRank: info.maxRank || 'Unrated',
         contestHistory,
         lastSynced: new Date(),
       },

@@ -19,6 +19,10 @@ const codeforcesStatsSchema = new mongoose.Schema({
     type: String,
     default: 'Unrated',
   },
+  maxRank: {
+    type: String,
+    default: 'Unrated',
+  },
   contestHistory: [
     {
       contestId: { type: Number },
