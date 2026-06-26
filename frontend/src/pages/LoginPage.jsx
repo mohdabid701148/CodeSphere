@@ -27,7 +27,7 @@ export default function LoginPage() {
       setErrorMsg(decodeURIComponent(queryError));
     }
 
-    if (queryAccessToken && queryRefreshToken && queryUser) {
+    if (queryAccessToken && queryRefreshToken && queryUser && !token) {
       try {
         const parsedUser = JSON.parse(decodeURIComponent(queryUser));
         login(queryAccessToken, queryRefreshToken, parsedUser);
@@ -37,7 +37,7 @@ export default function LoginPage() {
         setErrorMsg('Failed to process login data.');
       }
     }
-  }, [searchParams, login, navigate]);
+  }, [searchParams, token, login, navigate]);
 
   const handleGoogleLogin = () => {
     window.location.href = 'http://localhost:5000/auth/google';
@@ -49,19 +49,19 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
-      <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 shadow-2xl shadow-black/80 max-w-md w-full p-8 rounded-2xl space-y-6">
+      <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 max-w-md w-full p-8 rounded-2xl space-y-6">
         <div className="text-center space-y-3">
           <div className="flex justify-center">
             <Logo size={64} />
           </div>
-          <h2 className="text-3xl font-extrabold font-display text-white tracking-tight">Welcome to CodeSphere</h2>
-          <p className="text-gray-400 text-sm">
+          <h2 className="text-3xl font-extrabold font-display text-slate-900 tracking-tight">Welcome to CodeSphere</h2>
+          <p className="text-slate-600 text-sm">
             Sign in to aggregate your coding profiles and build your portfolio.
           </p>
         </div>
 
         {errorMsg && (
-          <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-200 text-sm">
+          <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">
             {errorMsg}
           </div>
         )}
@@ -69,7 +69,7 @@ export default function LoginPage() {
         <div className="space-y-4 pt-2">
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-slate-800 bg-slate-900/20 text-white font-semibold hover:bg-slate-900/40 hover:border-slate-700 transition-all duration-200 cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-semibold hover:bg-slate-100 hover:border-slate-300 transition-all duration-200 cursor-pointer"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -81,21 +81,21 @@ export default function LoginPage() {
           </button>
 
           <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-gray-500 text-xs uppercase tracking-wider font-semibold">Local Testing</span>
-            <div className="flex-grow border-t border-slate-800"></div>
+            <div className="flex-grow border-t border-slate-200"></div>
+            <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase tracking-wider font-semibold">Local Testing</span>
+            <div className="flex-grow border-t border-slate-200"></div>
           </div>
 
           <button
             onClick={handleMockLogin}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600/10 border border-indigo-500/30 text-indigo-300 font-semibold hover:bg-indigo-600/20 hover:text-white transition-all duration-200 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold hover:bg-indigo-100 hover:text-indigo-800 transition-all duration-200 cursor-pointer"
           >
             Continue with Mock User
           </button>
         </div>
 
         <div className="text-center pt-2">
-          <p className="text-gray-500 text-xs leading-relaxed">
+          <p className="text-slate-400 text-xs leading-relaxed">
             By signing in, you agree to our Terms of Service <br />
             and Privacy Policy.
           </p>

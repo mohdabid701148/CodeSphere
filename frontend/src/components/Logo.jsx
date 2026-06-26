@@ -83,7 +83,7 @@ export default function Logo({ size = 32, className = '' }) {
         {/* Isometric Code Brackets: '<' on Left Face */}
         <path
           d="M 40 53 L 30 59 L 40 65"
-          stroke="#f3f4f6"
+          stroke="#4f46e5"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"

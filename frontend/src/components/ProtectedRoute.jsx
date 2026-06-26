@@ -8,11 +8,8 @@ export default function ProtectedRoute({ children }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <div className="relative flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full border-t-2 border-b-2 border-purple-500 animate-spin"></div>
-          <div className="absolute w-10 h-10 rounded-full border-r-2 border-l-2 border-cyan-400 animate-pulse"></div>
-        </div>
-        <p className="mt-6 text-gray-400 text-sm font-medium tracking-wide animate-pulse">
+        <div className="w-12 h-12 rounded-full border-t-2 border-indigo-600 animate-spin"></div>
+        <p className="mt-6 text-slate-500 text-sm font-medium tracking-wide">
           Authenticating session...
         </p>
       </div>

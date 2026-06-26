@@ -56,22 +56,22 @@ export default function PublicProfilePage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-12 h-12 rounded-full border-t-2 border-purple-500 animate-spin"></div>
-        <p className="text-gray-400 text-sm">Loading portfolio profile...</p>
+        <div className="w-12 h-12 rounded-full border-t-2 border-indigo-600 animate-spin"></div>
+        <p className="text-slate-500 text-sm">Loading portfolio profile...</p>
       </div>
     );
   }
 
   if (privacyError) {
     return (
-      <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 shadow-2xl p-12 rounded-2xl text-center max-w-lg mx-auto my-16 space-y-6">
+      <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-12 rounded-2xl text-center max-w-lg mx-auto my-16 space-y-6">
         <span className="text-5xl">🔒</span>
-        <h3 className="text-white font-extrabold text-2xl tracking-tight">This Profile is Private</h3>
-        <p className="text-gray-400 text-sm max-w-sm mx-auto">
+        <h3 className="text-slate-900 font-extrabold text-2xl tracking-tight">This Profile is Private</h3>
+        <p className="text-slate-600 text-sm max-w-sm mx-auto">
           The owner of this portfolio has set their profile visibility to private. Only authenticated owners can access this dashboard view.
         </p>
         <div className="pt-4">
-          <Link to="/" className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">
+          <Link to="/" className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm">
             &larr; Return Home
           </Link>
         </div>
@@ -81,14 +81,14 @@ export default function PublicProfilePage() {
 
   if (errorMsg) {
     return (
-      <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 shadow-2xl p-12 rounded-2xl text-center max-w-lg mx-auto my-16 space-y-6">
+      <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-12 rounded-2xl text-center max-w-lg mx-auto my-16 space-y-6">
         <span className="text-5xl">🔍</span>
-        <h3 className="text-white font-extrabold text-2xl tracking-tight">Developer Not Found</h3>
-        <p className="text-gray-400 text-sm">
+        <h3 className="text-slate-900 font-extrabold text-2xl tracking-tight">Developer Not Found</h3>
+        <p className="text-slate-600 text-sm">
           {errorMsg || 'We could not find any active portfolio matching this address URL.'}
         </p>
         <div className="pt-4">
-          <Link to="/" className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">
+          <Link to="/" className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm">
             &larr; Return Home
           </Link>
         </div>
@@ -108,28 +108,28 @@ export default function PublicProfilePage() {
   })) || [];
 
   return (
-    <div className="space-y-8 animate-fade-in pb-16">
+    <div className="space-y-8 pb-16">
       {/* Public profile header card */}
-      <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 shadow-2xl p-8 rounded-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -z-10"></div>
-        <div className="absolute left-1/3 bottom-0 w-48 h-48 bg-emerald-500/30 rounded-full blur-3xl -z-10"></div>
+      <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-8 rounded-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-50/5 rounded-full blur-3xl -z-10"></div>
+        <div className="absolute left-1/3 bottom-0 w-48 h-48 bg-emerald-50/5 rounded-full blur-3xl -z-10"></div>
 
         <div className="flex flex-col md:flex-row items-center gap-6">
           <img
             src={user?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=placeholder'}
             alt={user?.name}
-            className="w-24 h-24 rounded-2xl border-2 border-indigo-500/20 object-cover"
+            className="w-24 h-24 rounded-2xl border border-indigo-100 object-cover"
           />
           <div className="text-center md:text-left space-y-2">
             <div className="flex flex-col md:flex-row md:items-center gap-2">
-              <h2 className="text-3xl font-extrabold font-display text-white tracking-tight">
+              <h2 className="text-3xl font-extrabold font-display text-slate-900 tracking-tight">
                 {user?.name}
               </h2>
             </div>
-            <p className="text-indigo-400 font-medium text-sm">
+            <p className="text-indigo-600 font-medium text-sm">
               {user?.headline || 'Developer Portfolio'}
             </p>
-            <p className="text-gray-400 text-sm max-w-xl">
+            <p className="text-slate-600 text-sm max-w-xl">
               {user?.bio || 'Passionate developer showcasing statistics.'}
             </p>
           </div>
@@ -142,7 +142,7 @@ export default function PublicProfilePage() {
               href={user.socialLinks.linkedin}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/20 hover:bg-indigo-600/10 text-white flex items-center justify-center transition"
+              className="w-10 h-10 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition"
               title="LinkedIn"
             >
               💼
@@ -153,7 +153,7 @@ export default function PublicProfilePage() {
               href={user.socialLinks.twitter}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 hover:bg-cyan-500/20 text-white flex items-center justify-center transition"
+              className="w-10 h-10 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition"
               title="Twitter"
             >
               🐦
@@ -164,7 +164,7 @@ export default function PublicProfilePage() {
               href={user.socialLinks.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 hover:bg-emerald-500/20 text-white flex items-center justify-center transition"
+              className="w-10 h-10 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition"
               title="Personal Website"
             >
               🌐
@@ -176,37 +176,37 @@ export default function PublicProfilePage() {
       {/* Grid: Overview charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* GitHub stats overview */}
-        <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 shadow-2xl p-6 rounded-2xl space-y-6 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-6 rounded-2xl space-y-6 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
               <span className="text-xl">🐙</span>
-              <h3 className="text-lg font-bold text-white">GitHub Statistics</h3>
+              <h3 className="text-lg font-bold text-slate-900">GitHub Statistics</h3>
             </div>
 
             {githubConn && githubStats ? (
               <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl bg-slate-900/20 border border-slate-800/60 text-center">
-                  <span className="text-2xl font-extrabold text-white">{githubStats.repos}</span>
-                  <span className="block text-xs text-gray-500 mt-1 uppercase font-semibold">Repos</span>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-2xl font-extrabold text-slate-900">{githubStats.repos}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Repos</span>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-900/20 border border-slate-800/60 text-center">
-                  <span className="text-2xl font-extrabold text-indigo-400">{githubStats.stars}</span>
-                  <span className="block text-xs text-gray-500 mt-1 uppercase font-semibold">Stars</span>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-2xl font-extrabold text-indigo-600">{githubStats.stars}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Stars</span>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-900/20 border border-slate-800/60 text-center">
-                  <span className="text-2xl font-extrabold text-emerald-400">{githubStats.followers}</span>
-                  <span className="block text-xs text-gray-500 mt-1 uppercase font-semibold">Followers</span>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-2xl font-extrabold text-emerald-600">{githubStats.followers}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Followers</span>
                 </div>
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-500 text-sm">
+              <div className="py-8 text-center text-slate-400 text-sm">
                 GitHub integration not configured.
               </div>
             )}
           </div>
           {githubConn && githubStats?.languages?.length > 0 && (
-            <div className="h-60 pt-4 border-t border-white/5">
-              <h4 className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2 text-center">Language Distribution</h4>
+            <div className="h-60 pt-4 border-t border-slate-100">
+              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-2 text-center">Language Distribution</h4>
               <ResponsiveContainer width="100%" height="90%">
                 <PieChart>
                   <Pie
@@ -224,10 +224,10 @@ export default function PublicProfilePage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: 'rgba(17, 24, 39, 0.95)', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '12px' }}
+                    itemStyle={{ color: '#0f172a' }}
                   />
-                  <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ fontSize: '11px', color: '#9ca3af' }} />
+                  <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ fontSize: '11px', color: '#64748b' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -235,37 +235,37 @@ export default function PublicProfilePage() {
         </div>
 
         {/* Codeforces stats overview */}
-        <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 shadow-2xl p-6 rounded-2xl space-y-6 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-6 rounded-2xl space-y-6 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
               <span className="text-xl">🏆</span>
-              <h3 className="text-lg font-bold text-white">Codeforces Statistics</h3>
+              <h3 className="text-lg font-bold text-slate-900">Codeforces Statistics</h3>
             </div>
 
             {codeforcesConn && codeforcesStats ? (
               <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl bg-slate-900/20 border border-slate-800/60 text-center">
-                  <span className="text-2xl font-extrabold text-white">{codeforcesStats.rating}</span>
-                  <span className="block text-xs text-gray-500 mt-1 uppercase font-semibold">Rating</span>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-2xl font-extrabold text-slate-900">{codeforcesStats.rating}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Rating</span>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-900/20 border border-slate-800/60 text-center">
-                  <span className="text-2xl font-extrabold text-indigo-400">{codeforcesStats.maxRating}</span>
-                  <span className="block text-xs text-gray-500 mt-1 uppercase font-semibold">Max Rating</span>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-2xl font-extrabold text-indigo-600">{codeforcesStats.maxRating}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Max Rating</span>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-900/20 border border-slate-800/60 text-center">
-                  <span className="text-md font-bold text-rose-400 truncate block mt-1 leading-6">{codeforcesStats.rank}</span>
-                  <span className="block text-xs text-gray-500 mt-1 uppercase font-semibold">Rank Tier</span>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-md font-bold text-rose-600 truncate block mt-1 leading-6">{codeforcesStats.rank}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Rank Tier</span>
                 </div>
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-500 text-sm">
+              <div className="py-8 text-center text-slate-400 text-sm">
                 Codeforces integration not configured.
               </div>
             )}
           </div>
           {codeforcesConn && cfChartData.length > 0 && (
-            <div className="h-60 pt-4 border-t border-white/5">
-              <h4 className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2 text-center">Rating Progression</h4>
+            <div className="h-60 pt-4 border-t border-slate-100">
+              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-2 text-center">Rating Progression</h4>
               <ResponsiveContainer width="100%" height="90%">
                 <AreaChart data={cfChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
@@ -275,11 +275,11 @@ export default function PublicProfilePage() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.01)" />
-                  <XAxis dataKey="name" stroke="#6b7280" style={{ fontSize: '10px' }} />
-                  <YAxis stroke="#6b7280" domain={['dataMin - 100', 'dataMax + 100']} style={{ fontSize: '10px' }} />
+                  <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '10px' }} />
+                  <YAxis stroke="#94a3b8" domain={['dataMin - 100', 'dataMax + 100']} style={{ fontSize: '10px' }} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: 'rgba(15, 18, 28, 0.95)', borderColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px' }}
+                    itemStyle={{ color: '#0f172a' }}
                     labelStyle={{ color: '#f43f5e', fontWeight: 'bold' }}
                     formatter={(value, name, props) => [`Rating: ${value} (Rank: ${props.payload.rank})`, props.payload.contest]}
                   />
