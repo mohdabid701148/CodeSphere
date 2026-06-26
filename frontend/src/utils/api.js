@@ -23,6 +23,20 @@ api.interceptors.request.use(
   }
 );
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Response Interceptor: Handle global errors and perform silent token refreshes
 api.interceptors.response.use(
   (response) => response,
@@ -33,14 +47,27 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       
       // If refresh token request itself failed with 401, clear credentials and reject
-      if (originalRequest.url === '/auth/refresh-token') {
+      if (originalRequest.url === '/auth/refresh-token' || originalRequest.url === '/auth/logout') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
+        window.dispatchEvent(new Event('authChange'));
         return Promise.reject(error);
       }
 
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
       const refreshToken = localStorage.getItem('refreshToken');
 
       if (refreshToken) {
@@ -55,7 +82,11 @@ api.interceptors.response.use(
             // Set the new rotated tokens
             localStorage.setItem('accessToken', newAccess);
             localStorage.setItem('refreshToken', newRefresh);
+            window.dispatchEvent(new Event('authChange'));
             
+            isRefreshing = false;
+            processQueue(null, newAccess);
+
             // Retry the original request with the new access token
             originalRequest.headers.Authorization = `Bearer ${newAccess}`;
             return api(originalRequest);
@@ -65,6 +96,10 @@ api.interceptors.response.use(
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
+          window.dispatchEvent(new Event('authChange'));
+          
+          isRefreshing = false;
+          processQueue(refreshErr, null);
           
           if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
             window.location.href = '/login?error=' + encodeURIComponent('Your session has expired. Please sign in again.');
@@ -74,6 +109,9 @@ api.interceptors.response.use(
       } else {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
+        window.dispatchEvent(new Event('authChange'));
+        isRefreshing = false;
+        
         if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
           window.location.href = '/login';
         }

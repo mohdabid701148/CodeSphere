@@ -59,17 +59,23 @@ export const initiateLogin = async (req, res) => {
     );
   }
 
-  if (process.env.GOOGLE_CLIENT_ID === 'your-google-client-id') {
-    throw new ApiError(400, 'Google OAuth credentials are not configured. Please use Mock User login.');
+  try {
+    if (process.env.GOOGLE_CLIENT_ID === 'your-google-client-id') {
+      throw new Error('Google OAuth credentials are not configured. Please use Mock User login.');
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback`;
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}&scope=openid%20profile%20email`;
+
+    res.redirect(googleAuthUrl);
+  } catch (error) {
+    console.error('OAuth Initiate Error:', error);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(error.message || 'OAuth initiation failed')}`);
   }
-
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback`;
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(
-    redirectUri
-  )}&scope=openid%20profile%20email`;
-
-  res.redirect(googleAuthUrl);
 };
 
 export const googleCallback = async (req, res) => {
@@ -124,12 +130,15 @@ export const googleCallback = async (req, res) => {
       if (!user.avatar) user.avatar = avatar;
       await user.save();
     } else {
-      const initialSlug = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+      const baseSlug = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+      const randomSuffix = Math.random().toString(36).substring(2, 6);
+      const initialSlug = `${baseSlug}-${randomSuffix}`;
+      const defaultName = baseSlug || 'Developer';
       user = await User.create({
         googleId,
-        name,
+        name: name || defaultName,
         email,
-        avatar,
+        avatar: avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${defaultName}`,
         slug: initialSlug,
       });
     }
@@ -153,7 +162,9 @@ export const googleCallback = async (req, res) => {
   } catch (error) {
     console.error('OAuth Callback Error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(error.message || 'OAuth verification failed')}`);
+    // Use a generic error message to prevent leaking sensitive backend error details
+    const safeErrorMessage = 'Authentication failed. Please try again or use another login method.';
+    res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(safeErrorMessage)}`);
   }
 };
 
@@ -198,16 +209,19 @@ export const getMe = async (req, res) => {
 };
 
 export const logoutUser = async (req, res) => {
-  // Clear refresh token in database to prevent hijacking session
-  await User.findByIdAndUpdate(
-    req.user._id,
-    {
-      $unset: {
-        refreshToken: 1,
-      },
-    },
-    { returnDocument: 'after' }
-  );
+  const { refreshToken } = req.body;
+
+  if (refreshToken) {
+    // Clear refresh token in database to prevent hijacking session
+    await User.findOneAndUpdate(
+      { refreshToken },
+      {
+        $unset: {
+          refreshToken: 1,
+        },
+      }
+    );
+  }
 
   res.status(200).json(new ApiResponse(200, {}, 'User logged out successfully'));
 };

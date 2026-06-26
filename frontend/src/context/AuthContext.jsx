@@ -1,24 +1,27 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../utils/api.js';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  // Track active access token in state
-  const [token, setToken] = useState(localStorage.getItem('accessToken'));
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('accessToken'));
   const [loading, setLoading] = useState(true);
 
-  // Sync active access token changes to localStorage
+  // Sync token and user state with localStorage via custom event
   useEffect(() => {
-    if (token) {
-      localStorage.setItem('accessToken', token);
-    } else {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-    }
-  }, [token]);
+    const handleAuthChange = () => {
+      setToken(localStorage.getItem('accessToken'));
+      const savedUser = localStorage.getItem('user');
+      setUser(savedUser ? JSON.parse(savedUser) : null);
+    };
+
+    window.addEventListener('authChange', handleAuthChange);
+    return () => window.removeEventListener('authChange', handleAuthChange);
+  }, []);
 
   // Fetch current user details on mount if access token is present
   useEffect(() => {
@@ -50,25 +53,43 @@ export const AuthProvider = ({ children }) => {
     };
 
     fetchUser();
-  }, [token]);
+  }, []); // Only run on mount, authChange handles future updates
 
-  const login = (newAccessToken, newRefreshToken, newUser) => {
-    setUser(newUser);
-    // Setting state triggers the useEffect sync above
+  const login = useCallback((newAccessToken, newRefreshToken, newUser) => {
+    localStorage.setItem('accessToken', newAccessToken);
     localStorage.setItem('refreshToken', newRefreshToken);
     localStorage.setItem('user', JSON.stringify(newUser));
     setToken(newAccessToken);
-  };
+    setUser(newUser);
+    window.dispatchEvent(new Event('authChange'));
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
     try {
-      await api.post('/auth/logout');
+      await api.post('/auth/logout', { refreshToken });
     } catch (e) {
       console.warn('Backend logout failed or offline:', e);
     }
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
-  };
+    window.dispatchEvent(new Event('authChange'));
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const response = await api.get('/auth/me');
+      if (response.data?.success) {
+        setUser(response.data.data);
+        localStorage.setItem('user', JSON.stringify(response.data.data));
+      }
+    } catch (e) {
+      console.error('Failed to refresh user:', e);
+    }
+  }, []);
 
   const value = {
     user,
@@ -76,17 +97,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    refreshUser: async () => {
-      try {
-        const response = await api.get('/auth/me');
-        if (response.data?.success) {
-          setUser(response.data.data);
-          localStorage.setItem('user', JSON.stringify(response.data.data));
-        }
-      } catch (e) {
-        console.error('Failed to refresh user:', e);
-      }
-    }
+    refreshUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

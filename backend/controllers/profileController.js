@@ -16,19 +16,10 @@ export const getProfileBySlug = async (req, res) => {
 
   // Privacy checking logic
   if (!user.isPublic) {
-    const authHeader = req.header('Authorization');
     let isOwner = false;
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (decoded._id === user._id.toString()) {
-          isOwner = true;
-        }
-      } catch (e) {
-        // Token verification failed, remains false
-      }
+    if (req.user && req.user._id.toString() === user._id.toString()) {
+      isOwner = true;
     }
 
     if (!isOwner) {
