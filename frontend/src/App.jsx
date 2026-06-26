@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IntegrationsPage from './pages/IntegrationsPage';
 import PublicProfilePage from './pages/PublicProfilePage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -16,8 +17,22 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/connect" element={<IntegrationsPage />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/connect" 
+              element={
+                <ProtectedRoute>
+                  <IntegrationsPage />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/profile/:slug" element={<PublicProfilePage />} />
           </Routes>
         </main>

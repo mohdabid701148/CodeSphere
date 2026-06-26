@@ -1,27 +1,23 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import Logo from './Logo';
 
 export default function Navbar() {
   const navigate = useNavigate();
-  // We'll read from localStorage directly in Phase 0, then shift to AuthContext in Phase 1
-  const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const { token, user, logout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
-    window.location.reload(); // Quick refresh to update state
   };
 
   return (
-    <nav className="glass-panel border-b border-white/5 px-6 py-4 rounded-b-2xl mb-8 flex justify-between items-center">
-      <Link to="/" className="flex items-center gap-2">
-        <span className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-500 to-cyan-400 flex items-center justify-center font-extrabold text-white text-lg">
-          C
-        </span>
-        <span className="text-xl font-bold font-display tracking-tight text-white">
-          Code<span className="text-purple-400">Sphere</span>
+    <nav className="bg-slate-950/40 backdrop-blur-xl border border-slate-800/80 shadow-2xl shadow-black/30 px-6 py-4 rounded-b-2xl mb-8 flex justify-between items-center">
+      <Link to="/" className="flex items-center gap-3 group">
+        <Logo size={32} className="group-hover:scale-105 transition-transform duration-300" />
+        <span className="text-xl font-extrabold font-display tracking-tight text-white">
+          Code<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">Sphere</span>
         </span>
       </Link>
 
@@ -50,7 +46,7 @@ export default function Navbar() {
         ) : (
           <Link
             to="/login"
-            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold transition text-sm"
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition text-sm shadow-lg shadow-indigo-500/10"
           >
             Sign In
           </Link>

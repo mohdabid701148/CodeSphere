@@ -5,6 +5,11 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import connectDB from './config/db.js';
+import { errorMiddleware } from './middleware/errorMiddleware.js';
+import authRouter from './routes/auth.js';
+import integrationsRouter from './routes/integrations.js';
+import syncRouter from './routes/sync.js';
+import profileRouter from './routes/profile.js';
 
 // Environment variable validation
 const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
@@ -28,6 +33,12 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/auth', authRouter);
+app.use('/integrations', integrationsRouter);
+app.use('/sync', syncRouter);
+app.use('/profile', profileRouter);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
@@ -57,15 +68,7 @@ app.use((req, res, next) => {
 });
 
 // Global Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    error: {
-      message: err.message || 'Internal Server Error',
-      status: err.status || 500
-    }
-  });
-});
+app.use(errorMiddleware);
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);

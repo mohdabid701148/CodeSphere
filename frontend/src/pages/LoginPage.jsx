@@ -1,30 +1,75 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { login, token } = useAuth();
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // If user is already logged in, redirect to dashboard
+  useEffect(() => {
+    if (token) {
+      navigate('/dashboard');
+    }
+  }, [token, navigate]);
+
+  // Extract OAuth callback parameters from URL query string
+  useEffect(() => {
+    const queryAccessToken = searchParams.get('accessToken');
+    const queryRefreshToken = searchParams.get('refreshToken');
+    const queryUser = searchParams.get('user');
+    const queryError = searchParams.get('error');
+
+    if (queryError) {
+      setErrorMsg(decodeURIComponent(queryError));
+    }
+
+    if (queryAccessToken && queryRefreshToken && queryUser) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(queryUser));
+        login(queryAccessToken, queryRefreshToken, parsedUser);
+        navigate('/dashboard');
+      } catch (err) {
+        console.error('Failed to parse redirected user data', err);
+        setErrorMsg('Failed to process login data.');
+      }
+    }
+  }, [searchParams, login, navigate]);
+
   const handleGoogleLogin = () => {
-    // Initiate OAuth flow
     window.location.href = 'http://localhost:5000/auth/google';
   };
 
   const handleMockLogin = () => {
-    // Initiate Mock authentication flow
     window.location.href = 'http://localhost:5000/auth/google?mock=true';
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
-      <div className="glass-panel max-w-md w-full p-8 rounded-3xl border border-white/10 space-y-8">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-extrabold font-display text-white">Welcome to CodeSphere</h2>
+      <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 shadow-2xl shadow-black/80 max-w-md w-full p-8 rounded-2xl space-y-6">
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <Logo size={64} />
+          </div>
+          <h2 className="text-3xl font-extrabold font-display text-white tracking-tight">Welcome to CodeSphere</h2>
           <p className="text-gray-400 text-sm">
             Sign in to aggregate your coding profiles and build your portfolio.
           </p>
         </div>
 
-        <div className="space-y-4 pt-4">
+        {errorMsg && (
+          <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-200 text-sm">
+            {errorMsg}
+          </div>
+        )}
+
+        <div className="space-y-4 pt-2">
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-white/10 bg-white/5 text-white font-semibold hover:bg-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-slate-800 bg-slate-900/20 text-white font-semibold hover:bg-slate-900/40 hover:border-slate-700 transition-all duration-200 cursor-pointer"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -36,21 +81,21 @@ export default function LoginPage() {
           </button>
 
           <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-white/5"></div>
-            <span className="flex-shrink mx-4 text-gray-500 text-xs uppercase tracking-wider">Local Testing</span>
-            <div className="flex-grow border-t border-white/5"></div>
+            <div className="flex-grow border-t border-slate-800"></div>
+            <span className="flex-shrink mx-4 text-gray-500 text-xs uppercase tracking-wider font-semibold">Local Testing</span>
+            <div className="flex-grow border-t border-slate-800"></div>
           </div>
 
           <button
             onClick={handleMockLogin}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-purple-600/30 border border-purple-500/30 text-purple-200 font-semibold hover:bg-purple-600/50 hover:text-white transition-all duration-200 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600/10 border border-indigo-500/30 text-indigo-300 font-semibold hover:bg-indigo-600/20 hover:text-white transition-all duration-200 cursor-pointer"
           >
             Continue with Mock User
           </button>
         </div>
 
         <div className="text-center pt-2">
-          <p className="text-gray-500 text-xs">
+          <p className="text-gray-500 text-xs leading-relaxed">
             By signing in, you agree to our Terms of Service <br />
             and Privacy Policy.
           </p>
