@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     fetchUser();
-  }, []); // Only run on mount, authChange handles future updates
+  }, [token]);
 
   const login = useCallback((newAccessToken, newRefreshToken, newUser) => {
     localStorage.setItem('accessToken', newAccessToken);
