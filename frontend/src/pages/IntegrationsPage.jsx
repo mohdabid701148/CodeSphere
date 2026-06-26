@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useIntegrations } from '../hooks/useIntegrations.js';
 
 export default function IntegrationsPage() {
-  const { connections, isLoading, connectMutation, disconnectMutation } = useIntegrations();
+  const { connections, isLoading, connectMutation, disconnectMutation, updateMutation } = useIntegrations();
   const [usernames, setUsernames] = useState({ github: '', codeforces: '' });
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
+  const [isEditingGithub, setIsEditingGithub] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
 
   const showStatus = (type, text) => {
     setStatusMsg({ type, text });
@@ -27,6 +29,28 @@ export default function IntegrationsPage() {
         },
         onError: (err) => {
           const errMsg = err.response?.data?.message || `Failed to connect ${platform} profile.`;
+          showStatus('error', errMsg);
+        }
+      }
+    );
+  };
+
+  const handleUpdate = async () => {
+    const username = editUsername.trim();
+    if (!username) {
+      showStatus('error', 'Please enter a GitHub username.');
+      return;
+    }
+
+    updateMutation.mutate(
+      { platform: 'github', username },
+      {
+        onSuccess: (data) => {
+          showStatus('success', data.message || 'GitHub username updated successfully!');
+          setIsEditingGithub(false);
+        },
+        onError: (err) => {
+          const errMsg = err.response?.data?.message || 'Failed to update GitHub username.';
           showStatus('error', errMsg);
         }
       }
@@ -64,7 +88,7 @@ export default function IntegrationsPage() {
   const githubConn = getPlatformConn('github');
   const codeforcesConn = getPlatformConn('codeforces');
 
-  const githubLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending';
+  const githubLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending' || updateMutation.status === 'pending';
   const codeforcesLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending';
 
   return (
@@ -119,29 +143,71 @@ export default function IntegrationsPage() {
           <div className="pt-6 border-t border-slate-200">
             {githubConn ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <div>
-                    <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Linked User</span>
-                    <a 
-                      href={`https://github.com/${githubConn.username}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 font-semibold text-sm hover:underline"
-                    >
-                      @{githubConn.username}
-                    </a>
-                  </div>
-                  <span className="text-xs text-slate-500">
-                    Sync: {githubConn.lastSync ? new Date(githubConn.lastSync).toLocaleDateString() : 'Never'}
-                  </span>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold mb-1">Linked User</span>
+                  {!isEditingGithub ? (
+                    <div className="flex items-center justify-between">
+                      <a 
+                        href={`https://github.com/${githubConn.username}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 font-semibold text-sm hover:underline"
+                      >
+                        @{githubConn.username}
+                      </a>
+                      <span className="text-xs text-slate-500">
+                        Sync: {githubConn.lastSync ? new Date(githubConn.lastSync).toLocaleDateString() : 'Never'}
+                      </span>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={editUsername}
+                      onChange={(e) => setEditUsername(e.target.value)}
+                      className="w-full mt-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition duration-200"
+                      placeholder="New GitHub username"
+                    />
+                  )}
                 </div>
-                <button
-                  disabled={githubLoading}
-                  onClick={() => handleDisconnect('github')}
-                  className="w-full py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
-                >
-                  {githubLoading ? 'Processing...' : 'Disconnect Account'}
-                </button>
+
+                {!isEditingGithub ? (
+                  <div className="flex gap-3">
+                    <button
+                      disabled={githubLoading}
+                      onClick={() => {
+                        setEditUsername(githubConn.username);
+                        setIsEditingGithub(true);
+                      }}
+                      className="w-1/2 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition duration-200 cursor-pointer disabled:opacity-50"
+                    >
+                      Edit Username
+                    </button>
+                    <button
+                      disabled={githubLoading}
+                      onClick={() => handleDisconnect('github')}
+                      className="w-1/2 py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
+                    >
+                      {githubLoading ? 'Processing...' : 'Disconnect'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-3">
+                    <button
+                      disabled={githubLoading}
+                      onClick={() => setIsEditingGithub(false)}
+                      className="w-1/2 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition duration-200 cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      disabled={githubLoading}
+                      onClick={handleUpdate}
+                      className="w-1/2 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition duration-200 cursor-pointer disabled:opacity-50"
+                    >
+                      {githubLoading ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">

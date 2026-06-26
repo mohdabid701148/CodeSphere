@@ -26,6 +26,14 @@ export const useIntegrations = () => {
     },
   });
 
+  // Mutation to update connected username
+  const updateMutation = useMutation({
+    mutationFn: ({ platform, username }) => integrationService.update(platform, username),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+    },
+  });
+
   return {
     connections: integrationsQuery.data || [],
     isLoading: integrationsQuery.isLoading,
@@ -33,5 +41,6 @@ export const useIntegrations = () => {
     refetch: integrationsQuery.refetch,
     connectMutation,
     disconnectMutation,
+    updateMutation,
   };
 };

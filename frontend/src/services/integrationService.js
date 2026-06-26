@@ -18,4 +18,10 @@ export const integrationService = {
     const res = await api.delete(`/integrations/${platform}`);
     return res.data;
   },
+
+  // Update connected username for a platform
+  update: async (platform, username) => {
+    const res = await api.patch(`/integrations/${platform}`, { username });
+    return res.data;
+  },
 };
