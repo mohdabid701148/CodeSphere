@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useIntegrations } from '../hooks/useIntegrations.js';
+import { syncService } from '../services/syncService.js';
 
 export default function IntegrationsPage() {
   const { connections, isLoading, connectMutation, disconnectMutation, updateMutation } = useIntegrations();
@@ -7,6 +8,7 @@ export default function IntegrationsPage() {
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
   const [isEditingGithub, setIsEditingGithub] = useState(false);
   const [editUsername, setEditUsername] = useState('');
+  const [isSyncingGithub, setIsSyncingGithub] = useState(false);
 
   const showStatus = (type, text) => {
     setStatusMsg({ type, text });
@@ -88,7 +90,19 @@ export default function IntegrationsPage() {
   const githubConn = getPlatformConn('github');
   const codeforcesConn = getPlatformConn('codeforces');
 
-  const githubLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending' || updateMutation.status === 'pending';
+  const githubLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending' || updateMutation.status === 'pending' || isSyncingGithub;
+
+  const handleSyncGithub = async () => {
+    setIsSyncingGithub(true);
+    try {
+      await syncService.syncPlatform('github');
+      showStatus('success', 'GitHub statistics synchronized successfully.');
+    } catch (err) {
+      showStatus('error', err.response?.data?.message || 'GitHub sync failed.');
+    } finally {
+      setIsSyncingGithub(false);
+    }
+  };
   const codeforcesLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending';
 
   return (
@@ -171,24 +185,33 @@ export default function IntegrationsPage() {
                 </div>
 
                 {!isEditingGithub ? (
-                  <div className="flex gap-3">
+                  <div className="space-y-3">
                     <button
                       disabled={githubLoading}
-                      onClick={() => {
-                        setEditUsername(githubConn.username);
-                        setIsEditingGithub(true);
-                      }}
-                      className="w-1/2 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition duration-200 cursor-pointer disabled:opacity-50"
+                      onClick={handleSyncGithub}
+                      className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition duration-200 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      Edit Username
+                      {isSyncingGithub ? '🔄 Syncing...' : '🔄 Sync GitHub'}
                     </button>
-                    <button
-                      disabled={githubLoading}
-                      onClick={() => handleDisconnect('github')}
-                      className="w-1/2 py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
-                    >
-                      {githubLoading ? 'Processing...' : 'Disconnect'}
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        disabled={githubLoading}
+                        onClick={() => {
+                          setEditUsername(githubConn.username);
+                          setIsEditingGithub(true);
+                        }}
+                        className="w-1/2 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition duration-200 cursor-pointer disabled:opacity-50"
+                      >
+                        Edit Username
+                      </button>
+                      <button
+                        disabled={githubLoading}
+                        onClick={() => handleDisconnect('github')}
+                        className="w-1/2 py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
+                      >
+                        {githubLoading ? 'Processing...' : 'Disconnect'}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex gap-3">
