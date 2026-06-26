@@ -2,11 +2,9 @@ import React, { useState } from 'react';
 import { useIntegrations } from '../hooks/useIntegrations.js';
 
 export default function IntegrationsPage() {
-  const { connections, isLoading, connectMutation, disconnectMutation, updateMutation } = useIntegrations();
+  const { connections, isLoading, connectMutation, disconnectMutation } = useIntegrations();
   const [usernames, setUsernames] = useState({ github: '', codeforces: '' });
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
-  const [isEditingGithub, setIsEditingGithub] = useState(false);
-  const [editUsername, setEditUsername] = useState('');
 
   const showStatus = (type, text) => {
     setStatusMsg({ type, text });
@@ -35,28 +33,6 @@ export default function IntegrationsPage() {
     );
   };
 
-  const handleUpdate = async () => {
-    const username = editUsername.trim();
-    if (!username) {
-      showStatus('error', 'Please input a username.');
-      return;
-    }
-
-    updateMutation.mutate(
-      { platform: 'github', username },
-      {
-        onSuccess: (data) => {
-          showStatus('success', data.message || 'Successfully updated GitHub username!');
-          setIsEditingGithub(false);
-        },
-        onError: (err) => {
-          const errMsg = err.response?.data?.message || 'Failed to update GitHub profile.';
-          showStatus('error', errMsg);
-        }
-      }
-    );
-  };
-
   const handleDisconnect = async (platform) => {
     if (!window.confirm(`Are you sure you want to disconnect your ${platform === 'github' ? 'GitHub' : 'Codeforces'} profile? Your synced statistics will be lost.`)) {
       return;
@@ -65,9 +41,6 @@ export default function IntegrationsPage() {
     disconnectMutation.mutate(platform, {
       onSuccess: () => {
         showStatus('success', `Disconnected ${platform === 'github' ? 'GitHub' : 'Codeforces'} successfully.`);
-        if (platform === 'github') {
-          setIsEditingGithub(false);
-        }
       },
       onError: () => {
         showStatus('error', `Failed to disconnect ${platform}.`);
@@ -89,8 +62,10 @@ export default function IntegrationsPage() {
   }
 
   const githubConn = getPlatformConn('github');
+  const codeforcesConn = getPlatformConn('codeforces');
 
-  const githubLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending' || updateMutation.status === 'pending';
+  const githubLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending';
+  const codeforcesLoading = connectMutation.status === 'pending' || disconnectMutation.status === 'pending';
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -145,75 +120,28 @@ export default function IntegrationsPage() {
             {githubConn ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <div className="w-full">
-                    <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold mb-1">Linked User</span>
-                    
-                    {!isEditingGithub ? (
-                      <div className="flex items-center justify-between">
-                        <a 
-                          href={`https://github.com/${githubConn.username}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 font-semibold text-sm hover:underline"
-                        >
-                          @{githubConn.username}
-                        </a>
-                        <span className="text-xs text-slate-500">
-                          Sync: {githubConn.lastSync ? new Date(githubConn.lastSync).toLocaleDateString() : 'Never'}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 mt-1">
-                        <input
-                          type="text"
-                          value={editUsername}
-                          onChange={(e) => setEditUsername(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-indigo-500"
-                          placeholder="New username"
-                        />
-                      </div>
-                    )}
+                  <div>
+                    <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Linked User</span>
+                    <a 
+                      href={`https://github.com/${githubConn.username}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 font-semibold text-sm hover:underline"
+                    >
+                      @{githubConn.username}
+                    </a>
                   </div>
+                  <span className="text-xs text-slate-500">
+                    Sync: {githubConn.lastSync ? new Date(githubConn.lastSync).toLocaleDateString() : 'Never'}
+                  </span>
                 </div>
-
-                {!isEditingGithub ? (
-                  <div className="flex gap-3">
-                    <button
-                      disabled={githubLoading}
-                      onClick={() => {
-                        setEditUsername(githubConn.username);
-                        setIsEditingGithub(true);
-                      }}
-                      className="w-1/2 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition duration-200 cursor-pointer disabled:opacity-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      disabled={githubLoading}
-                      onClick={() => handleDisconnect('github')}
-                      className="w-1/2 py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
-                    >
-                      {githubLoading ? 'Processing...' : 'Disconnect'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-3">
-                    <button
-                      disabled={githubLoading}
-                      onClick={() => setIsEditingGithub(false)}
-                      className="w-1/2 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition duration-200 cursor-pointer disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      disabled={githubLoading}
-                      onClick={handleUpdate}
-                      className="w-1/2 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition duration-200 cursor-pointer disabled:opacity-50"
-                    >
-                      {githubLoading ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
-                )}
+                <button
+                  disabled={githubLoading}
+                  onClick={() => handleDisconnect('github')}
+                  className="w-full py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
+                >
+                  {githubLoading ? 'Processing...' : 'Disconnect Account'}
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -238,12 +166,80 @@ export default function IntegrationsPage() {
           </div>
         </div>
 
-        {/* Codeforces integration hidden for Phase 2 MVP */}
-        {/*
-        <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-8 rounded-2xl space-y-6 flex flex-col justify-between opacity-50 cursor-not-allowed">
-           ... codeforces integration ...
+        {/* Codeforces Integration Card */}
+        <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-8 rounded-2xl space-y-6 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 text-2xl font-bold">
+                  🏆
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Codeforces</h3>
+                  <p className="text-xs text-slate-500">Rating, Rank, Contest History</p>
+                </div>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                codeforcesConn ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {codeforcesConn ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+
+            <p className="text-slate-600 text-sm leading-relaxed">
+              Link your Codeforces handle to synchronize your maximum and current competitive programming ratings, active rank tier, and past contest statistics.
+            </p>
+          </div>
+
+          <div className="pt-6 border-t border-slate-200">
+            {codeforcesConn ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div>
+                    <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Linked Handle</span>
+                    <a 
+                      href={`https://codeforces.com/profile/${codeforcesConn.username}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 font-semibold text-sm hover:underline"
+                    >
+                      {codeforcesConn.username}
+                    </a>
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    Sync: {codeforcesConn.lastSync ? new Date(codeforcesConn.lastSync).toLocaleDateString() : 'Never'}
+                  </span>
+                </div>
+                <button
+                  disabled={codeforcesLoading}
+                  onClick={() => handleDisconnect('codeforces')}
+                  className="w-full py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition duration-200 cursor-pointer disabled:opacity-50"
+                >
+                  {codeforcesLoading ? 'Processing...' : 'Disconnect Handle'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Enter Codeforces handle"
+                    value={usernames.codeforces}
+                    onChange={(e) => setUsernames(prev => ({ ...prev, codeforces: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition duration-200"
+                  />
+                </div>
+                <button
+                  disabled={codeforcesLoading}
+                  onClick={() => handleConnect('codeforces')}
+                  className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition duration-200 cursor-pointer disabled:opacity-50"
+                >
+                  {codeforcesLoading ? 'Verifying & Connecting...' : 'Connect Codeforces'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        */}
       </div>
     </div>
   );

@@ -18,10 +18,4 @@ export const integrationService = {
     const res = await api.delete(`/integrations/${platform}`);
     return res.data;
   },
-
-  // Update existing handle
-  update: async (platform, username) => {
-    const res = await api.patch(`/integrations/${platform}`, { username });
-    return res.data;
-  },
 };
