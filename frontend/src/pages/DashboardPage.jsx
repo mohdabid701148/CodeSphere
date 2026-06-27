@@ -876,52 +876,7 @@ export default function DashboardPage() {
 
           </div>
 
-          {/* Privacy controls & Sync Logs */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Settings Card */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 md:col-span-1">
-              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">Profile Privacy</h4>
-              
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">Public Portfolio URL</span>
-                <button
-                  onClick={handleTogglePrivacy}
-                  className={`px-3 py-1.5 rounded-full font-bold text-[10px] uppercase cursor-pointer transition ${
-                    user?.isPublic 
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                      : 'bg-slate-100 text-slate-600 border border-slate-200'
-                  }`}
-                >
-                  {user?.isPublic ? 'Public' : 'Private'}
-                </button>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-normal">
-                If private, only you can access your profile portfolio. When public, recruiters can view your stats at your slug url.
-              </p>
-            </div>
 
-            {/* Sync logs */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 md:col-span-2">
-              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">System Sync Logs</h4>
-              
-              <div className="space-y-2 max-h-24 overflow-y-auto pr-1">
-                {syncLogs.length > 0 ? (
-                  syncLogs.map((log) => (
-                    <div key={log._id} className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1.5">
-                      <span className={`font-semibold capitalize ${log.status === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {log.platform}: {log.status}
-                      </span>
-                      <span className="text-slate-500 font-mono">{log.message}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6 text-slate-400 text-[10px]">No sync history logs found.</div>
-                )}
-              </div>
-            </div>
-
-          </div>
 
         </div>
 
