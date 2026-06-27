@@ -14,7 +14,6 @@ export default function PlatformRatingChart({
   // Calculate improvement
   const firstRating = history[0]?.value || 0;
   const improvement = currentRating - firstRating;
-  const improvementPct = firstRating > 0 ? ((improvement / firstRating) * 100).toFixed(2) : 0;
   
   const isPositive = improvement >= 0;
   
@@ -96,7 +95,7 @@ export default function PlatformRatingChart({
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isPositive ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" : "M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"} />
             </svg>
-            {isPositive ? '+' : ''}{improvement} ({isPositive ? '+' : ''}{improvementPct}%)
+            {isPositive ? '+' : ''}{improvement}
           </div>
           <div className={`text-[10px] mt-0.5 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
             Improvement
