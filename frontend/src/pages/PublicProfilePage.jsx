@@ -11,7 +11,10 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend
+  Legend,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 
 export default function PublicProfilePage() {
@@ -23,6 +26,7 @@ export default function PublicProfilePage() {
   const [selectedPeriod, setSelectedPeriod] = useState('Current');
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false);
   const [hoveredDay, setHoveredDay] = useState(null);
+  const [showAllDsaTopics, setShowAllDsaTopics] = useState(false);
 
   useEffect(() => {
     const fetchPublicProfile = async () => {
@@ -373,23 +377,28 @@ export default function PublicProfilePage() {
         {/* Right Column: Ingestion Stats View */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Dynamic Overview row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider block">Total Questions</span>
-              <span className="text-3xl font-extrabold text-slate-900 mt-1">{totalSolved}</span>
+          {/* Total Contests Widget */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 mb-6">
+            <div className="text-center md:text-left flex flex-col items-center md:items-start md:pl-4">
+              <span className="text-slate-500 font-bold text-lg">Total Contests</span>
+              <span className="text-7xl font-black text-slate-900 mt-2">{totalContests}</span>
             </div>
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider block">Questions on CP</span>
-              <span className="text-3xl font-extrabold text-slate-900 mt-1">{cpSolved}</span>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider block">Total Active Days</span>
-              <span className="text-3xl font-extrabold text-slate-900 mt-1">{totalActiveDays}</span>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider block">Total Contests</span>
-              <span className="text-3xl font-extrabold text-slate-900 mt-1">{totalContests}</span>
+            
+            <div className="flex flex-col gap-3 w-full md:w-auto md:min-w-[260px]">
+              <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-5 h-5 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.leetcode.icon }} />
+                  <span className="font-semibold text-slate-700 text-sm">LeetCode</span>
+                </div>
+                <span className="font-bold text-slate-800">{leetcodeStats?.ratingHistory?.length || 0}</span>
+              </div>
+              <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-5 h-5 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.codeforces.icon }} />
+                  <span className="font-semibold text-slate-700 text-sm">CodeForces</span>
+                </div>
+                <span className="font-bold text-slate-800">{codeforcesStats?.ratingHistory?.length || 0}</span>
+              </div>
             </div>
           </div>
 
@@ -505,109 +514,127 @@ export default function PublicProfilePage() {
           {/* DSA solved counts and CP ranks side-by-side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            {/* LeetCode stats breakdown */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">Problems Solved (DSA)</h4>
+            {/* Problems Solved (Doughnut Charts) */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+              <h4 className="text-sm text-slate-600 font-bold text-center border-b border-slate-100 pb-3">Problems Solved</h4>
               
-              {leetcodeStats ? (
-                <div className="space-y-4">
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <span className="text-3xl font-bold text-slate-900">{leetcodeStats.solvedCount}</span>
-                      <span className="text-xs text-slate-400 block">LeetCode Solved</span>
+              {/* DSA Section */}
+              <div className="space-y-4">
+                <h5 className="text-xs font-bold text-slate-500 text-center uppercase tracking-wider">DSA</h5>
+                <div className="flex items-center justify-center gap-8">
+                  
+                  {/* Doughnut Chart */}
+                  <div className="w-32 h-32 relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[{ name: 'Easy', value: leetcodeStats?.additionalMetrics?.easySolved || 0, color: '#4ade80' }, { name: 'Medium', value: leetcodeStats?.additionalMetrics?.mediumSolved || 0, color: '#facc15' }, { name: 'Hard', value: leetcodeStats?.additionalMetrics?.hardSolved || 0, color: '#f87171' }].filter(d => d.value > 0).length ? [{ name: 'Easy', value: leetcodeStats?.additionalMetrics?.easySolved || 0, color: '#4ade80' }, { name: 'Medium', value: leetcodeStats?.additionalMetrics?.mediumSolved || 0, color: '#facc15' }, { name: 'Hard', value: leetcodeStats?.additionalMetrics?.hardSolved || 0, color: '#f87171' }].filter(d => d.value > 0) : [{ name: 'None', value: 1, color: '#f1f5f9' }]}
+                          innerRadius={45}
+                          outerRadius={60}
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {([{ name: 'Easy', value: leetcodeStats?.additionalMetrics?.easySolved || 0, color: '#4ade80' }, { name: 'Medium', value: leetcodeStats?.additionalMetrics?.mediumSolved || 0, color: '#facc15' }, { name: 'Hard', value: leetcodeStats?.additionalMetrics?.hardSolved || 0, color: '#f87171' }].filter(d => d.value > 0).length ? [{ name: 'Easy', value: leetcodeStats?.additionalMetrics?.easySolved || 0, color: '#4ade80' }, { name: 'Medium', value: leetcodeStats?.additionalMetrics?.mediumSolved || 0, color: '#facc15' }, { name: 'Hard', value: leetcodeStats?.additionalMetrics?.hardSolved || 0, color: '#f87171' }].filter(d => d.value > 0) : [{ name: 'None', value: 1, color: '#f1f5f9' }]).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xl font-black text-slate-900">{leetcodeStats?.solvedCount || 0}</span>
                     </div>
                   </div>
 
-                  <div className="space-y-2.5">
-                    {/* Easy */}
-                    <div>
-                      <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Easy</span>
-                        <span className="font-semibold">{leetcodeStats.additionalMetrics?.easySolved || 0}</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-emerald-500 h-full rounded-full" 
-                          style={{ width: `${leetcodeStats.solvedCount > 0 ? (leetcodeStats.additionalMetrics?.easySolved / leetcodeStats.solvedCount) * 100 : 0}%` }}
-                        ></div>
-                      </div>
+                  {/* Stats Pills */}
+                  <div className="flex-1 space-y-2 max-w-[140px]">
+                    <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
+                      <span className="text-xs font-semibold text-emerald-500">Easy</span>
+                      <span className="text-xs font-bold text-slate-700">{leetcodeStats?.additionalMetrics?.easySolved || 0}</span>
                     </div>
-
-                    {/* Medium */}
-                    <div>
-                      <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Medium</span>
-                        <span className="font-semibold">{leetcodeStats.additionalMetrics?.mediumSolved || 0}</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-amber-500 h-full rounded-full" 
-                          style={{ width: `${leetcodeStats.solvedCount > 0 ? (leetcodeStats.additionalMetrics?.mediumSolved / leetcodeStats.solvedCount) * 100 : 0}%` }}
-                        ></div>
-                      </div>
+                    <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
+                      <span className="text-xs font-semibold text-amber-500">Medium</span>
+                      <span className="text-xs font-bold text-slate-700">{leetcodeStats?.additionalMetrics?.mediumSolved || 0}</span>
                     </div>
-
-                    {/* Hard */}
-                    <div>
-                      <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Hard</span>
-                        <span className="font-semibold">{leetcodeStats.additionalMetrics?.hardSolved || 0}</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-rose-500 h-full rounded-full" 
-                          style={{ width: `${leetcodeStats.solvedCount > 0 ? (leetcodeStats.additionalMetrics?.hardSolved / leetcodeStats.solvedCount) * 100 : 0}%` }}
-                        ></div>
-                      </div>
+                    <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
+                      <span className="text-xs font-semibold text-rose-500">Hard</span>
+                      <span className="text-xs font-bold text-slate-700">{leetcodeStats?.additionalMetrics?.hardSolved || 0}</span>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="py-12 text-center text-slate-400 text-xs">
-                  LeetCode stats unavailable.
-                </div>
-              )}
-            </div>
 
-            {/* CP ratings side-by-side */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">Contest Rankings</h4>
-
-              <div className="grid grid-cols-2 gap-4 divide-x divide-slate-100">
-                {/* LeetCode */}
-                <div className="space-y-2 text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <span className="w-4 h-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.leetcode.icon }} />
-                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">LeetCode</span>
-                  </div>
-                  {leetcodeStats && leetcodeStats.rating > 0 ? (
-                    <div>
-                      <span className="text-2xl font-extrabold text-slate-800 block">{leetcodeStats.rating}</span>
-                      <span className="text-[10px] text-slate-400 block">Peak: {leetcodeStats.maxRating}</span>
-                      <span className="text-[10px] text-amber-600 font-bold block mt-1 uppercase">{leetcodeStats.rank}</span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-400 block py-4">Unrated</span>
-                  )}
-                </div>
-
-                {/* Codeforces */}
-                <div className="space-y-2 text-center pl-4">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <span className="w-4 h-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.codeforces.icon }} />
-                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Codeforces</span>
-                  </div>
-                  {codeforcesStats && codeforcesStats.rating > 0 ? (
-                    <div>
-                      <span className="text-2xl font-extrabold text-slate-800 block">{codeforcesStats.rating}</span>
-                      <span className="text-[10px] text-slate-400 block">Peak: {codeforcesStats.maxRating}</span>
-                      <span className="text-[10px] text-rose-600 font-bold block mt-1 uppercase">{codeforcesStats.rank}</span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-400 block py-4">Unrated</span>
-                  )}
                 </div>
               </div>
+
+              <div className="border-t border-slate-100 w-full"></div>
+
+              {/* CP Section */}
+              <div className="space-y-4">
+                <h5 className="text-xs font-bold text-slate-500 text-center uppercase tracking-wider">Competitive Programming</h5>
+                <div className="flex items-center justify-center gap-8">
+                  
+                  {/* Doughnut Chart */}
+                  <div className="w-32 h-32 relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={(codeforcesStats?.additionalMetrics?.totalSolved || 0) > 0 ? [{ name: 'Codeforces', value: codeforcesStats.additionalMetrics.totalSolved, color: '#facc15' }] : [{ name: 'None', value: 1, color: '#f1f5f9' }]}
+                          innerRadius={45}
+                          outerRadius={60}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {((codeforcesStats?.additionalMetrics?.totalSolved || 0) > 0 ? [{ name: 'Codeforces', value: codeforcesStats.additionalMetrics.totalSolved, color: '#facc15' }] : [{ name: 'None', value: 1, color: '#f1f5f9' }]).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xl font-black text-slate-900">{codeforcesStats?.additionalMetrics?.totalSolved || 0}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats Pills */}
+                  <div className="flex-1 max-w-[140px]">
+                    <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
+                      <span className="text-xs font-semibold text-amber-500">Codeforces</span>
+                      <span className="text-xs font-bold text-slate-700">{codeforcesStats?.additionalMetrics?.totalSolved || 0}</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            {/* Contest Rankings Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+               <h4 className="text-sm text-slate-600 font-bold text-center border-b border-slate-100 pb-3">Contest Rankings</h4>
+               
+               {/* LeetCode */}
+               <div className="space-y-2 text-center pt-2">
+                 <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">LeetCode</h5>
+                 <div className="flex items-center justify-center gap-6">
+                   <div className="w-16 h-16 opacity-20 grayscale flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.leetcode.icon }}></div>
+                   <div className="text-center">
+                     <span className="text-4xl font-black text-slate-900 block">{leetcodeStats?.rating || 0}</span>
+                     <span className="text-[10px] text-slate-500 block text-center mt-1">(max : {leetcodeStats?.maxRating || 0})</span>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="border-t border-slate-100 my-6 w-3/4 mx-auto"></div>
+
+               {/* Codeforces */}
+               <div className="space-y-2 text-center pb-2">
+                 <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Codeforces</h5>
+                 <div className="flex items-center justify-center gap-8">
+                   <span className="text-2xl font-bold text-emerald-600 capitalize">{codeforcesStats?.rank || 'Unrated'}</span>
+                   <div className="text-center">
+                     <span className="text-4xl font-black text-slate-900 block">{codeforcesStats?.rating || 0}</span>
+                     <span className="text-[10px] text-slate-500 block text-center mt-1">(max : {codeforcesStats?.maxRating || 0})</span>
+                   </div>
+                 </div>
+               </div>
 
               {/* GitHub */}
               {githubStats && (
@@ -681,20 +708,30 @@ export default function PublicProfilePage() {
               <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">DSA Topic Analysis</h4>
               
               {dsaTags.length > 0 ? (
-                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 text-xs">
-                  {dsaTags.slice(0, 10).map((tag, idx) => (
-                    <div key={idx} className="flex justify-between items-center border-b border-slate-50 pb-1.5">
-                      <span className="font-semibold text-slate-700 capitalize">{tag.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-500 text-[9px] rounded-full font-mono">
-                          {tag.category}
+                <div className="space-y-3 max-h-[240px] overflow-y-auto pr-2 text-xs">
+                  {dsaTags.slice(0, showAllDsaTopics ? dsaTags.length : 10).map((tag, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <span className="font-semibold text-slate-500 capitalize w-32 text-right truncate" title={tag.name}>{tag.name}</span>
+                      <div className="flex-1 bg-slate-100 h-5 rounded-sm relative overflow-hidden group">
+                        <div 
+                          className="h-full bg-[#4285F4] rounded-sm transition-all duration-500 ease-out" 
+                          style={{ width: `${Math.max((tag.solved / (dsaTags[0]?.solved || 1)) * 100, 2)}%` }}
+                        ></div>
+                        <span className="absolute inset-y-0 left-2 flex items-center text-[10px] font-bold text-white z-10 drop-shadow-md">
+                          {tag.solved}
                         </span>
-                        <span className="font-bold text-slate-900 w-8 text-right">{tag.solved}</span>
                       </div>
                     </div>
                   ))}
                   {dsaTags.length > 10 && (
-                    <p className="text-[10px] text-slate-400 text-center pt-1">+ {dsaTags.length - 10} more topics solved</p>
+                    <div className="pt-2 text-center pb-2">
+                      <button 
+                        onClick={() => setShowAllDsaTopics(!showAllDsaTopics)}
+                        className="text-[#4285F4] hover:underline text-[11px] font-medium bg-transparent border-none cursor-pointer"
+                      >
+                        {showAllDsaTopics ? 'show less' : 'show more'}
+                      </button>
+                    </div>
                   )}
                 </div>
               ) : (
