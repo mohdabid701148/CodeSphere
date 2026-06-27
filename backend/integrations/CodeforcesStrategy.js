@@ -44,6 +44,7 @@ export class CodeforcesStrategy extends BasePlatformStrategy {
         label: `Contest ${idx + 1}`,
         value: item.newRating,
         description: item.contestName,
+        timestamp: new Date(item.ratingUpdateTimeSeconds * 1000),
       }));
     }
 

@@ -44,6 +44,7 @@ const platformStatsSchema = new mongoose.Schema({
       label: { type: String },
       value: { type: Number },
       description: { type: String },
+      timestamp: { type: Date },
     },
   ],
   lastSynced: {

@@ -149,6 +149,7 @@ export class LeetCodeStrategy extends BasePlatformStrategy {
         label: `Contest ${idx + 1}`,
         value: ratingVal,
         description: item.contest?.title || 'LeetCode Contest',
+        timestamp: item.contest?.startTime ? new Date(item.contest.startTime * 1000) : new Date(),
       });
     });
 

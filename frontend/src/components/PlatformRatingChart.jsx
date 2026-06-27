@@ -13,15 +13,43 @@ export default function PlatformRatingChart({
 
   if (!history || history.length === 0) return null;
 
-  // Apply Filter
-  let filteredHistory = history;
-  if (filter === 'Last 10') filteredHistory = history.slice(-10);
-  if (filter === 'Last 20') filteredHistory = history.slice(-20);
-  if (filter === 'Last 50') filteredHistory = history.slice(-50);
+  // Determine available years from history
+  const availableYears = Array.from(new Set(
+    history
+      .map(item => item.timestamp ? new Date(item.timestamp).getFullYear() : null)
+      .filter(year => year !== null && !isNaN(year))
+  )).sort((a, b) => b - a);
+
+  const hasYears = availableYears.length > 0;
+
+  // We map from the FULL history to preserve accurate deltas and Match numbers, 
+  // and THEN we filter for the view.
+  const fullChartData = history.map((item, index) => {
+    const delta = index > 0 ? item.value - history[index - 1].value : null;
+    return {
+      ...item,
+      matchName: `Match ${index + 1}`,
+      delta
+    };
+  });
+
+  let displayData = fullChartData;
+  if (filter !== 'All Time') {
+    if (filter.startsWith('Last')) {
+      const num = parseInt(filter.replace('Last ', ''));
+      if (!isNaN(num)) displayData = fullChartData.slice(-num);
+    } else {
+      const year = parseInt(filter);
+      if (!isNaN(year)) {
+        displayData = fullChartData.filter(item => item.timestamp && new Date(item.timestamp).getFullYear() === year);
+      }
+    }
+  }
 
   // Calculate improvement based on the currently filtered window
-  const firstRating = filteredHistory[0]?.value || 0;
-  const improvement = currentRating - firstRating;
+  const firstFilteredRating = displayData.length > 0 ? displayData[0].value : 0;
+  const lastFilteredRating = displayData.length > 0 ? displayData[displayData.length - 1].value : currentRating;
+  const improvement = lastFilteredRating - firstFilteredRating;
   const isPositive = improvement >= 0;
   
   const getThemeClasses = (color) => {
@@ -50,22 +78,6 @@ export default function PlatformRatingChart({
 
   const theme = getThemeClasses(themeColor);
   const chartId = `color-${platformName.toLowerCase()}`;
-
-  // We map from the FULL history to preserve accurate deltas and Match numbers, 
-  // and THEN we slice for the view.
-  const fullChartData = history.map((item, index) => {
-    const delta = index > 0 ? item.value - history[index - 1].value : null;
-    return {
-      ...item,
-      matchName: `Match ${index + 1}`,
-      delta
-    };
-  });
-
-  let displayData = fullChartData;
-  if (filter === 'Last 10') displayData = fullChartData.slice(-10);
-  if (filter === 'Last 20') displayData = fullChartData.slice(-20);
-  if (filter === 'Last 50') displayData = fullChartData.slice(-50);
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -112,9 +124,17 @@ export default function PlatformRatingChart({
             className="appearance-none pl-8 pr-8 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white cursor-pointer hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="All Time">All Time</option>
-            <option value="Last 50">Last 50 Matches</option>
-            <option value="Last 20">Last 20 Matches</option>
-            <option value="Last 10">Last 10 Matches</option>
+            {hasYears ? (
+              availableYears.map(year => (
+                <option key={year} value={year.toString()}>{year}</option>
+              ))
+            ) : (
+              <>
+                <option value="Last 50">Last 50 Matches</option>
+                <option value="Last 20">Last 20 Matches</option>
+                <option value="Last 10">Last 10 Matches</option>
+              </>
+            )}
           </select>
           <svg className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -130,7 +150,7 @@ export default function PlatformRatingChart({
         <div className="flex gap-4">
           <div className={`${theme.bgLight} rounded-xl p-3 min-w-[120px] flex flex-col justify-center`}>
             <div className={`text-[10px] uppercase font-bold ${theme.textDark} mb-1`}>Current Rating</div>
-            <div className={`text-2xl font-extrabold ${theme.textDark}`}>{currentRating}</div>
+            <div className={`text-2xl font-extrabold ${theme.textDark}`}>{lastFilteredRating}</div>
           </div>
           <div className={`${theme.bgLight} rounded-xl p-3 min-w-[120px] flex flex-col justify-center`}>
             <div className={`text-[10px] uppercase font-bold ${theme.textDark} mb-1`}>Max Rating</div>
