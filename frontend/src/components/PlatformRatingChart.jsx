@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function PlatformRatingChart({ 
@@ -9,12 +9,19 @@ export default function PlatformRatingChart({
   themeColor,
   iconSvg 
 }) {
+  const [filter, setFilter] = useState('All Time');
+
   if (!history || history.length === 0) return null;
 
-  // Calculate improvement
-  const firstRating = history[0]?.value || 0;
+  // Apply Filter
+  let filteredHistory = history;
+  if (filter === 'Last 10') filteredHistory = history.slice(-10);
+  if (filter === 'Last 20') filteredHistory = history.slice(-20);
+  if (filter === 'Last 50') filteredHistory = history.slice(-50);
+
+  // Calculate improvement based on the currently filtered window
+  const firstRating = filteredHistory[0]?.value || 0;
   const improvement = currentRating - firstRating;
-  
   const isPositive = improvement >= 0;
   
   const getThemeClasses = (color) => {
@@ -33,7 +40,6 @@ export default function PlatformRatingChart({
         badgeBg: 'bg-amber-500',
       };
     }
-    // Default fallback
     return {
       bgLight: 'bg-slate-50',
       textDark: 'text-slate-600',
@@ -45,7 +51,9 @@ export default function PlatformRatingChart({
   const theme = getThemeClasses(themeColor);
   const chartId = `color-${platformName.toLowerCase()}`;
 
-  const chartData = history.map((item, index) => {
+  // We map from the FULL history to preserve accurate deltas and Match numbers, 
+  // and THEN we slice for the view.
+  const fullChartData = history.map((item, index) => {
     const delta = index > 0 ? item.value - history[index - 1].value : null;
     return {
       ...item,
@@ -54,15 +62,20 @@ export default function PlatformRatingChart({
     };
   });
 
+  let displayData = fullChartData;
+  if (filter === 'Last 10') displayData = fullChartData.slice(-10);
+  if (filter === 'Last 20') displayData = fullChartData.slice(-20);
+  if (filter === 'Last 50') displayData = fullChartData.slice(-50);
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const { delta, description, value } = data;
       
-      const isPositive = delta > 0;
-      const isNegative = delta < 0;
-      const deltaColor = isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-slate-500';
-      const sign = isPositive ? '+' : '';
+      const isPositiveDelta = delta > 0;
+      const isNegativeDelta = delta < 0;
+      const deltaColor = isPositiveDelta ? 'text-emerald-500' : isNegativeDelta ? 'text-rose-500' : 'text-slate-500';
+      const sign = isPositiveDelta ? '+' : '';
 
       return (
         <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-md text-[11px] max-w-xs">
@@ -91,13 +104,22 @@ export default function PlatformRatingChart({
           </div>
         </div>
         
-        {/* Mock Dropdown */}
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white cursor-pointer hover:bg-slate-50">
-          <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* Functional Dropdown */}
+        <div className="relative">
+          <select 
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="appearance-none pl-8 pr-8 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white cursor-pointer hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="All Time">All Time</option>
+            <option value="Last 50">Last 50 Matches</option>
+            <option value="Last 20">Last 20 Matches</option>
+            <option value="Last 10">Last 10 Matches</option>
+          </select>
+          <svg className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          All Time
-          <svg className="w-3 h-3 text-slate-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
@@ -132,7 +154,7 @@ export default function PlatformRatingChart({
       {/* Chart */}
       <div className="h-64 mt-4 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <AreaChart data={displayData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id={chartId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={themeColor} stopOpacity={0.3}/>
