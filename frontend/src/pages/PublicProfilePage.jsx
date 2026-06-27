@@ -23,6 +23,18 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [privacyError, setPrivacyError] = useState(false);
+  const [toast, setToast] = useState({ type: '', text: '' });
+
+  const showToast = (type, text) => {
+    setToast({ type, text });
+    setTimeout(() => setToast({ type: '', text: '' }), 4000);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => showToast('success', 'Profile link copied to clipboard!'))
+      .catch(() => showToast('error', 'Failed to copy link.'));
+  };
 
   useEffect(() => {
     const fetchPublicProfile = async () => {
@@ -109,6 +121,15 @@ export default function PublicProfilePage() {
 
   return (
     <div className="space-y-8 pb-16">
+      {/* Toast Alert */}
+      {toast.text && (
+        <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-xl border text-sm shadow-xl transition-all ${
+          toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'
+        }`}>
+          {toast.text}
+        </div>
+      )}
+
       {/* Public profile header card */}
       <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-8 rounded-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-50/5 rounded-full blur-3xl -z-10"></div>
@@ -170,6 +191,12 @@ export default function PublicProfilePage() {
               🌐
             </a>
           )}
+          <button
+            onClick={handleCopyLink}
+            className="px-4 h-10 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-semibold hover:bg-indigo-100 transition cursor-pointer flex items-center gap-2"
+          >
+            🔗 Share
+          </button>
         </div>
       </div>
 
@@ -178,13 +205,20 @@ export default function PublicProfilePage() {
         {/* GitHub stats overview */}
         <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-6 rounded-2xl space-y-6 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <span className="text-xl">🐙</span>
-              <h3 className="text-lg font-bold text-slate-900">GitHub Statistics</h3>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🐙</span>
+                <h3 className="text-lg font-bold text-slate-900">GitHub Statistics</h3>
+              </div>
+              {githubConn && githubStats?.lastSynced && (
+                <span className="text-xs text-slate-400 font-medium">
+                  Last synced: {new Date(githubStats.lastSynced).toLocaleDateString()}
+                </span>
+              )}
             </div>
 
             {githubConn && githubStats ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <span className="text-2xl font-extrabold text-slate-900">{githubStats.repos}</span>
                   <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Repos</span>
@@ -196,6 +230,10 @@ export default function PublicProfilePage() {
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <span className="text-2xl font-extrabold text-emerald-600">{githubStats.followers}</span>
                   <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Followers</span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-2xl font-extrabold text-amber-600">{githubStats.following}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Following</span>
                 </div>
               </div>
             ) : (
@@ -237,13 +275,20 @@ export default function PublicProfilePage() {
         {/* Codeforces stats overview */}
         <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-6 rounded-2xl space-y-6 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <span className="text-xl">🏆</span>
-              <h3 className="text-lg font-bold text-slate-900">Codeforces Statistics</h3>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🏆</span>
+                <h3 className="text-lg font-bold text-slate-900">Codeforces Statistics</h3>
+              </div>
+              {codeforcesConn && codeforcesStats?.lastSynced && (
+                <span className="text-xs text-slate-400 font-medium">
+                  Last synced: {new Date(codeforcesStats.lastSynced).toLocaleDateString()}
+                </span>
+              )}
             </div>
 
             {codeforcesConn && codeforcesStats ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <span className="text-2xl font-extrabold text-slate-900">{codeforcesStats.rating}</span>
                   <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Rating</span>
@@ -255,6 +300,10 @@ export default function PublicProfilePage() {
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <span className="text-md font-bold text-rose-600 truncate block mt-1 leading-6">{codeforcesStats.rank}</span>
                   <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Rank Tier</span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-md font-bold text-amber-600 truncate block mt-1 leading-6">{codeforcesStats.maxRank || 'Unrated'}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Max Rank Tier</span>
                 </div>
               </div>
             ) : (

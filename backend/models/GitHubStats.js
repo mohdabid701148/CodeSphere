@@ -19,6 +19,10 @@ const githubStatsSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  following: {
+    type: Number,
+    default: 0,
+  },
   languages: [
     {
       name: { type: String, required: true },

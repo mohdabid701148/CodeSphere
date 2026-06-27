@@ -26,3 +26,17 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     throw new ApiError(401, error?.message || 'Invalid access token');
   }
 });
+
+export const verifyJWTOptional = asyncHandler(async (req, _, next) => {
+  const authHeader = req.header('Authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.replace('Bearer ', '');
+    try {
+      const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+      req.user = await User.findById(decodedToken._id).select('-googleId -refreshToken');
+    } catch (error) {
+      // Ignore token errors for optional auth
+    }
+  }
+  next();
+});

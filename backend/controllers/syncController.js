@@ -23,20 +23,34 @@ const syncGitHub = async (userId, username) => {
     
     const profile = await profileRes.json();
 
-    const reposRes = await fetch(`https://api.github.com/users/${username}/repos?per_page=100`, {
-      headers: { 'User-Agent': 'CodeSphere-App' }
-    });
-    
-    if (!reposRes.ok) {
-      throw new Error(`GitHub repos fetch failed: ${reposRes.statusText}`);
+    // Paginate through all repos
+    let allRepos = [];
+    let page = 1;
+    while (true) {
+      const reposRes = await fetch(`https://api.github.com/users/${username}/repos?per_page=100&page=${page}`, {
+        headers: { 'User-Agent': 'CodeSphere-App' }
+      });
+
+      if (reposRes.status === 403) {
+        console.warn(`GitHub rate limit reached during repo fetch (page ${page}). Using ${allRepos.length} repos collected so far.`);
+        break;
+      }
+
+      if (!reposRes.ok) {
+        throw new Error(`GitHub repos fetch failed on page ${page}: ${reposRes.statusText}`);
+      }
+
+      const repos = await reposRes.json();
+      if (repos.length === 0) break;
+
+      allRepos = allRepos.concat(repos);
+      page++;
     }
-    
-    const repos = await reposRes.json();
 
     let totalStars = 0;
     const languageCounts = {};
 
-    repos.forEach((repo) => {
+    allRepos.forEach((repo) => {
       totalStars += repo.stargazers_count || 0;
       if (repo.language) {
         languageCounts[repo.language] = (languageCounts[repo.language] || 0) + 1;
@@ -52,9 +66,10 @@ const syncGitHub = async (userId, username) => {
     const stats = await GitHubStats.findOneAndUpdate(
       { userId },
       {
-        repos: profile.public_repos || repos.length,
+        repos: profile.public_repos || allRepos.length,
         stars: totalStars,
         followers: profile.followers || 0,
+        following: profile.following || 0,
         languages,
         lastSynced: new Date(),
       },
@@ -100,6 +115,7 @@ const syncCodeforces = async (userId, username) => {
         rating: info.rating || 0,
         maxRating: info.maxRating || 0,
         rank: info.rank || 'Unrated',
+        maxRank: info.maxRank || 'Unrated',
         contestHistory,
         lastSynced: new Date(),
       },

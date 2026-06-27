@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard.js';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -306,7 +305,7 @@ export default function DashboardPage() {
             </div>
 
             {githubConn && githubStats ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <span className="text-2xl font-extrabold text-slate-900">{githubStats.repos}</span>
                   <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Repos</span>
@@ -318,6 +317,10 @@ export default function DashboardPage() {
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <span className="text-2xl font-extrabold text-emerald-600">{githubStats.followers}</span>
                   <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Followers</span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-2xl font-extrabold text-amber-600">{githubStats.following}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Following</span>
                 </div>
               </div>
             ) : (
@@ -376,7 +379,7 @@ export default function DashboardPage() {
             </div>
 
             {codeforcesConn && codeforcesStats ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <span className="text-2xl font-extrabold text-slate-900">{codeforcesStats.rating}</span>
                   <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Rating</span>
@@ -388,6 +391,10 @@ export default function DashboardPage() {
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <span className="text-md font-bold text-rose-600 truncate block mt-1 leading-6">{codeforcesStats.rank}</span>
                   <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Rank Tier</span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <span className="text-md font-bold text-amber-600 truncate block mt-1 leading-6">{codeforcesStats.maxRank || 'Unrated'}</span>
+                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Max Rank Tier</span>
                 </div>
               </div>
             ) : (

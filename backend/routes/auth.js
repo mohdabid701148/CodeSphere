@@ -15,6 +15,6 @@ router.get('/google', asyncHandler(initiateLogin));
 router.get('/google/callback', asyncHandler(googleCallback));
 router.post('/refresh-token', asyncHandler(refreshAccessToken));
 router.get('/me', verifyJWT, asyncHandler(getMe));
-router.post('/logout', verifyJWT, asyncHandler(logoutUser));
+router.post('/logout', asyncHandler(logoutUser));
 
 export default router;
