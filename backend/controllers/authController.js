@@ -24,6 +24,11 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 export const initiateLogin = async (req, res) => {
   try {
+    if (process.env.MOCK_AUTH === 'true') {
+      const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback?code=mock_code`;
+      return res.redirect(redirectUri);
+    }
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
@@ -55,39 +60,51 @@ export const googleCallback = async (req, res) => {
   const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback`;
 
   try {
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      }),
-    });
+    let googleId, name, email, avatar;
 
-    const tokenData = await tokenResponse.json();
+    if (process.env.MOCK_AUTH === 'true' && code === 'mock_code') {
+      googleId = 'mock_google_id';
+      name = 'Mock Developer';
+      email = 'mock@example.com';
+      avatar = 'https://api.dicebear.com/7.x/initials/svg?seed=MockDeveloper';
+    } else {
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }),
+      });
 
-    if (tokenData.error) {
-      throw new ApiError(400, `Token Exchange Error: ${tokenData.error_description || tokenData.error}`);
+      const tokenData = await tokenResponse.json();
+
+      if (tokenData.error) {
+        throw new ApiError(400, `Token Exchange Error: ${tokenData.error_description || tokenData.error}`);
+      }
+
+      const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
+
+      const userInfo = await userInfoResponse.json();
+
+      if (userInfo.error) {
+        throw new ApiError(400, `Google UserInfo Error: ${userInfo.error_description || userInfo.error}`);
+      }
+
+      googleId = userInfo.sub;
+      name = userInfo.name;
+      email = userInfo.email;
+      avatar = userInfo.picture;
     }
-
-    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
-      },
-    });
-
-    const userInfo = await userInfoResponse.json();
-
-    if (userInfo.error) {
-      throw new ApiError(400, `Google UserInfo Error: ${userInfo.error_description || userInfo.error}`);
-    }
-
-    const { sub: googleId, name, email, picture: avatar } = userInfo;
 
     let user = await User.findOne({ email });
 

@@ -1,3 +1,7 @@
+import dns from 'dns';
+// Force Google DNS to avoid issues with restrictive network DNS servers
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
