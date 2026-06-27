@@ -8,7 +8,7 @@ const syncLogsSchema = new mongoose.Schema({
   },
   platform: {
     type: String,
-    enum: ['github', 'codeforces', 'all'],
+    enum: ['github', 'codeforces', 'leetcode', 'all'],
     required: true,
   },
   status: {

@@ -23,48 +23,14 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 export const initiateLogin = async (req, res) => {
-  const { mock } = req.query;
-
-  if (mock === 'true' || process.env.MOCK_AUTH === 'true') {
-    let user = await User.findOne({ email: 'mock.dev@codesphere.local' });
-    if (!user) {
-      user = await User.create({
-        googleId: 'mock-google-id-12345',
-        name: 'Mock Developer',
-        email: 'mock.dev@codesphere.local',
-        avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=mockdev',
-        role: 'user',
-        slug: 'mockdev',
-        bio: 'A passionate developer showcasing profile statistics.',
-        headline: 'Full Stack Engineer & Competitive Programmer',
-        isPublic: true,
-      });
-    }
-
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-    const userPayload = encodeURIComponent(
-      JSON.stringify({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar,
-        slug: user.slug,
-      })
-    );
-
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    return res.redirect(
-      `${frontendUrl}/login?accessToken=${accessToken}&refreshToken=${refreshToken}&user=${userPayload}`
-    );
-  }
-
   try {
-    if (process.env.GOOGLE_CLIENT_ID === 'your-google-client-id') {
-      throw new Error('Google OAuth credentials are not configured. Please use Mock User login.');
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!clientId || clientId === 'your-google-client-id' || !clientSecret || clientSecret === 'your-google-client-secret') {
+      throw new Error('Google OAuth credentials are not configured. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env.');
     }
 
-    const clientId = process.env.GOOGLE_CLIENT_ID;
     const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback`;
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(
       redirectUri

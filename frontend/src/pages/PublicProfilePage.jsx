@@ -1,21 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import { PLATFORM_CONFIGS } from '../config/platforms.js';
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
   Legend
 } from 'recharts';
-
-const COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f97316', '#a855f7', '#3b82f6', '#ec4899', '#6b7280'];
 
 export default function PublicProfilePage() {
   const { slug } = useParams();
@@ -23,18 +19,9 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [privacyError, setPrivacyError] = useState(false);
-  const [toast, setToast] = useState({ type: '', text: '' });
-
-  const showToast = (type, text) => {
-    setToast({ type, text });
-    setTimeout(() => setToast({ type: '', text: '' }), 4000);
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href)
-      .then(() => showToast('success', 'Profile link copied to clipboard!'))
-      .catch(() => showToast('error', 'Failed to copy link.'));
-  };
+  const [selectedPeriod, setSelectedPeriod] = useState('Current');
+  const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false);
+  const [hoveredDay, setHoveredDay] = useState(null);
 
   useEffect(() => {
     const fetchPublicProfile = async () => {
@@ -68,7 +55,7 @@ export default function PublicProfilePage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-12 h-12 rounded-full border-t-2 border-indigo-600 animate-spin"></div>
+        <div className="w-12 h-12 rounded-full border-t-2 border-slate-900 animate-spin"></div>
         <p className="text-slate-500 text-sm">Loading portfolio profile...</p>
       </div>
     );
@@ -76,14 +63,14 @@ export default function PublicProfilePage() {
 
   if (privacyError) {
     return (
-      <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-12 rounded-2xl text-center max-w-lg mx-auto my-16 space-y-6">
+      <div className="bg-white border border-slate-200 shadow-md p-12 rounded-2xl text-center max-w-lg mx-auto my-16 space-y-6">
         <span className="text-5xl">🔒</span>
         <h3 className="text-slate-900 font-extrabold text-2xl tracking-tight">This Profile is Private</h3>
         <p className="text-slate-600 text-sm max-w-sm mx-auto">
-          The owner of this portfolio has set their profile visibility to private. Only authenticated owners can access this dashboard view.
+          The owner of this portfolio has set their profile visibility to private. Only the authenticated owner can access this view.
         </p>
         <div className="pt-4">
-          <Link to="/" className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm">
+          <Link to="/" className="text-slate-900 font-semibold text-sm hover:underline">
             &larr; Return Home
           </Link>
         </div>
@@ -93,14 +80,14 @@ export default function PublicProfilePage() {
 
   if (errorMsg) {
     return (
-      <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-12 rounded-2xl text-center max-w-lg mx-auto my-16 space-y-6">
+      <div className="bg-white border border-slate-200 shadow-md p-12 rounded-2xl text-center max-w-lg mx-auto my-16 space-y-6">
         <span className="text-5xl">🔍</span>
         <h3 className="text-slate-900 font-extrabold text-2xl tracking-tight">Developer Not Found</h3>
         <p className="text-slate-600 text-sm">
           {errorMsg || 'We could not find any active portfolio matching this address URL.'}
         </p>
         <div className="pt-4">
-          <Link to="/" className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm">
+          <Link to="/" className="text-slate-900 font-semibold text-sm hover:underline">
             &larr; Return Home
           </Link>
         </div>
@@ -108,236 +95,618 @@ export default function PublicProfilePage() {
     );
   }
 
-  const { user, connections = [], githubStats, codeforcesStats } = data || {};
-  const githubConn = connections.find(c => c.platform === 'github');
-  const codeforcesConn = connections.find(c => c.platform === 'codeforces');
+  const { user, connections = [], githubStats, codeforcesStats, leetcodeStats, allStats = [] } = data || {};
 
-  const cfChartData = codeforcesStats?.contestHistory?.map((c, i) => ({
-    name: `Contest ${i + 1}`,
-    rating: c.newRating,
-    rank: c.rank,
-    contest: c.contestName.length > 30 ? c.contestName.substring(0, 30) + '...' : c.contestName
-  })) || [];
+  // Find active connections
+  const getPlatformConn = (platform) => connections.find(c => c.platform === platform && c.connected);
+
+  // Compute aggregated stats
+  const totalSolved = (leetcodeStats?.solvedCount || 0) + (codeforcesStats?.solvedCount || 0);
+  const totalContests = (leetcodeStats?.contestsCount || 0) + (codeforcesStats?.contestsCount || 0);
+  const totalActiveDays = (leetcodeStats?.additionalMetrics?.activeDays || 0) + (codeforcesStats?.additionalMetrics?.activeDays || 0);
+  const cpSolved = codeforcesStats?.solvedCount || 0;
+
+  // Prepare unified rating chart data
+  const cfHistory = codeforcesStats?.history || [];
+  const lcHistory = leetcodeStats?.history || [];
+  
+  const chartDataLength = Math.max(cfHistory.length, lcHistory.length);
+  const unifiedChartData = [];
+  for (let i = 0; i < chartDataLength; i++) {
+    const dataPoint = { name: `Match ${i + 1}` };
+    if (i < cfHistory.length) {
+      dataPoint.Codeforces = cfHistory[i].value;
+      dataPoint.cfContest = cfHistory[i].description;
+    }
+    if (i < lcHistory.length) {
+      dataPoint.LeetCode = lcHistory[i].value;
+      dataPoint.lcContest = lcHistory[i].description;
+    }
+    unifiedChartData.push(dataPoint);
+  }
+
+  // Get awards and topics from LeetCode
+  const leetCodeBadges = leetcodeStats?.additionalMetrics?.badges || [];
+  const dsaTags = leetcodeStats?.additionalMetrics?.tags || [];
+
+  // Flat calendar dates for calculating streaks
+  const getFlatCalendarData = (lcCalendar = {}, cfCalendar = {}, period = 'Current') => {
+    const dates = [];
+    const today = new Date();
+    
+    if (period === 'Current') {
+      const startDate = new Date();
+      startDate.setDate(today.getDate() - 180);
+      const currentDate = new Date(startDate);
+      while (currentDate <= today) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0);
+        dates.push({
+          date: new Date(currentDate),
+          dateStr,
+          count
+        });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    } else {
+      const selectedYear = parseInt(period);
+      const startDate = new Date(selectedYear, 0, 1);
+      const endDate = new Date(selectedYear, 11, 31);
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0);
+        dates.push({
+          date: new Date(currentDate),
+          dateStr,
+          count
+        });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+    return dates;
+  };
+
+  const calendarDates = getFlatCalendarData(
+    leetcodeStats?.additionalMetrics?.calendar,
+    codeforcesStats?.additionalMetrics?.calendar,
+    selectedPeriod
+  );
+
+  // Grouped monthly grids for rendering heatmap blocks
+  const getMonthlyCalendarGrid = (lcCalendar = {}, cfCalendar = {}, period = 'Current') => {
+    const monthsData = [];
+    const today = new Date();
+
+    const generateMonthGrid = (year, month) => {
+      const targetDate = new Date(year, month, 1);
+      const firstDay = new Date(year, month, 1);
+      const firstDayOfWeek = firstDay.getDay(); // 0 is Sunday
+      
+      const lastDay = new Date(year, month + 1, 0);
+      const totalDays = lastDay.getDate();
+      const lastDayOfWeek = lastDay.getDay();
+      
+      const dates = [];
+      
+      // Padding before first day of month (blank grid squares)
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        dates.push({ isPadding: true });
+      }
+      
+      // Days in the month
+      for (let day = 1; day <= totalDays; day++) {
+        const currentDate = new Date(year, month, day);
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0);
+        dates.push({
+          isPadding: false,
+          date: currentDate,
+          dateStr,
+          count
+        });
+      }
+      
+      // Padding after last day of month (blank grid squares)
+      for (let i = lastDayOfWeek + 1; i <= 6; i++) {
+        dates.push({ isPadding: true });
+      }
+      
+      return {
+        monthName: targetDate.toLocaleString('default', { month: 'short' }),
+        dates
+      };
+    };
+    
+    if (period === 'Current') {
+      // Generate the last 6 months (including current month)
+      for (let m = 5; m >= 0; m--) {
+        const targetDate = new Date(today.getFullYear(), today.getMonth() - m, 1);
+        monthsData.push(generateMonthGrid(targetDate.getFullYear(), targetDate.getMonth()));
+      }
+    } else {
+      // Generate full year (January to December)
+      const selectedYear = parseInt(period);
+      for (let m = 0; m < 12; m++) {
+        monthsData.push(generateMonthGrid(selectedYear, m));
+      }
+    }
+    
+    return monthsData;
+  };
+
+  const monthlyGrid = getMonthlyCalendarGrid(
+    leetcodeStats?.additionalMetrics?.calendar,
+    codeforcesStats?.additionalMetrics?.calendar,
+    selectedPeriod
+  );
+
+  // Compute streaks
+  const calculateStreaks = (dates) => {
+    const activeDates = dates.filter(d => d.count > 0).map(d => d.dateStr);
+    const uniqueSortedDates = [...new Set(activeDates)].sort();
+
+    let maxStreak = 0;
+    let currentStreak = 0;
+    let tempStreak = 0;
+    let prevDate = null;
+
+    uniqueSortedDates.forEach(dateStr => {
+      const curr = new Date(dateStr);
+      if (!prevDate) {
+        tempStreak = 1;
+      } else {
+        const diffTime = Math.abs(curr - prevDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          tempStreak += 1;
+        } else if (diffDays > 1) {
+          if (tempStreak > maxStreak) maxStreak = tempStreak;
+          tempStreak = 1;
+        }
+      }
+      prevDate = curr;
+    });
+
+    if (tempStreak > maxStreak) maxStreak = tempStreak;
+
+    if (uniqueSortedDates.length > 0) {
+      const lastActiveDate = new Date(uniqueSortedDates[uniqueSortedDates.length - 1]);
+      const today = new Date();
+      const diffTime = Math.abs(today - lastActiveDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays <= 2) {
+        currentStreak = tempStreak;
+      } else {
+        currentStreak = 0;
+      }
+    }
+
+    const totalSubmissions = dates.reduce((sum, d) => sum + d.count, 0);
+
+    return { maxStreak, currentStreak, totalSubmissions };
+  };
+
+  const { maxStreak, currentStreak, totalSubmissions } = calculateStreaks(calendarDates);
 
   return (
     <div className="space-y-8 pb-16">
-      {/* Toast Alert */}
-      {toast.text && (
-        <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-xl border text-sm shadow-xl transition-all ${
-          toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'
-        }`}>
-          {toast.text}
-        </div>
-      )}
-
-      {/* Public profile header card */}
-      <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-8 rounded-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-50/5 rounded-full blur-3xl -z-10"></div>
-        <div className="absolute left-1/3 bottom-0 w-48 h-48 bg-emerald-50/5 rounded-full blur-3xl -z-10"></div>
-
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          <img
-            src={user?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=placeholder'}
-            alt={user?.name}
-            className="w-24 h-24 rounded-2xl border border-indigo-100 object-cover"
-          />
-          <div className="text-center md:text-left space-y-2">
-            <div className="flex flex-col md:flex-row md:items-center gap-2">
-              <h2 className="text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-                {user?.name}
-              </h2>
+      {/* Main Grid: Sidebar + Profile Ingestion Statistics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column: Public Profile Info & Platform Dock */}
+        <div className="space-y-6 lg:col-span-1">
+          {/* Developer Card */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <img
+                src={user?.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=Developer'}
+                alt={user?.name}
+                className="w-24 h-24 rounded-full border border-slate-100 object-cover"
+              />
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold text-slate-900">{user?.name}</h2>
+                <p className="text-xs text-slate-400 font-mono">@{user?.slug || 'username'}</p>
+              </div>
+              <p className="text-slate-600 text-xs text-center max-w-xs">{user?.headline || 'Developer Portfolio'}</p>
             </div>
-            <p className="text-indigo-600 font-medium text-sm">
-              {user?.headline || 'Developer Portfolio'}
-            </p>
-            <p className="text-slate-600 text-sm max-w-xl">
-              {user?.bio || 'Passionate developer showcasing statistics.'}
-            </p>
+
+            <div className="pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-500">
+              <p>{user?.bio || 'Passionate developer showcasing stats.'}</p>
+              {user?.socialLinks?.linkedin && (
+                <p className="truncate">💼 <a href={user.socialLinks.linkedin} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">LinkedIn</a></p>
+              )}
+              {user?.socialLinks?.twitter && (
+                <p className="truncate">🐦 <a href={user.socialLinks.twitter} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">Twitter</a></p>
+              )}
+              {user?.socialLinks?.website && (
+                <p className="truncate">🌐 <a href={user.socialLinks.website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">Website</a></p>
+              )}
+            </div>
+          </div>
+
+          {/* Connected Handles List */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">Connected Platforms</h3>
+            
+            <div className="space-y-3">
+              {Object.values(PLATFORM_CONFIGS).map((platform) => {
+                const conn = getPlatformConn(platform.key);
+                if (!conn) return null;
+
+                return (
+                  <div key={platform.key} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-800 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: platform.icon }} />
+                      <div className="ml-1">
+                        <span className="font-semibold text-slate-800 block">{platform.title}</span>
+                        <a 
+                          href={`${platform.urlPrefix}${conn.username}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[10px] text-slate-400 hover:underline truncate block max-w-[150px]"
+                        >
+                          {conn.username}
+                        </a>
+                      </div>
+                    </div>
+                    <span className="text-emerald-500 font-bold">✓</span>
+                  </div>
+                );
+              })}
+
+              {connections.filter(c => c.connected).length === 0 && (
+                <div className="text-center py-6 text-slate-400 text-xs">No active coding profiles connected.</div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Social Links */}
-        <div className="flex gap-4 justify-center">
-          {user?.socialLinks?.linkedin && (
-            <a
-              href={user.socialLinks.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-10 h-10 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition"
-              title="LinkedIn"
-            >
-              💼
-            </a>
-          )}
-          {user?.socialLinks?.twitter && (
-            <a
-              href={user.socialLinks.twitter}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-10 h-10 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition"
-              title="Twitter"
-            >
-              🐦
-            </a>
-          )}
-          {user?.socialLinks?.website && (
-            <a
-              href={user.socialLinks.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-10 h-10 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition"
-              title="Personal Website"
-            >
-              🌐
-            </a>
-          )}
-          <button
-            onClick={handleCopyLink}
-            className="px-4 h-10 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-semibold hover:bg-indigo-100 transition cursor-pointer flex items-center gap-2"
-          >
-            🔗 Share
-          </button>
-        </div>
-      </div>
+        {/* Right Column: Ingestion Stats View */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Dynamic Overview row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
+              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider block">Total Questions</span>
+              <span className="text-3xl font-extrabold text-slate-900 mt-1">{totalSolved}</span>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
+              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider block">Questions on CP</span>
+              <span className="text-3xl font-extrabold text-slate-900 mt-1">{cpSolved}</span>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
+              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider block">Total Active Days</span>
+              <span className="text-3xl font-extrabold text-slate-900 mt-1">{totalActiveDays}</span>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
+              <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider block">Total Contests</span>
+              <span className="text-3xl font-extrabold text-slate-900 mt-1">{totalContests}</span>
+            </div>
+          </div>
 
-      {/* Grid: Overview charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* GitHub stats overview */}
-        <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-6 rounded-2xl space-y-6 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🐙</span>
-                <h3 className="text-lg font-bold text-slate-900">GitHub Statistics</h3>
+          {/* Coding Consistency (GitHub/LeetCode style monthly grouped heatmap grid) */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 relative consistency-card">
+            <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-3 gap-2 relative">
+              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Coding Consistency</h4>
+              <div className="flex gap-4 text-xs font-semibold text-slate-500 items-center">
+                <span>Submissions <span className="text-slate-900 font-bold font-mono">{totalSubmissions}</span></span>
+                <span>Max.Streak <span className="text-slate-900 font-bold font-mono">{maxStreak}</span></span>
+                <span>Current.Streak <span className="text-slate-900 font-bold font-mono">{currentStreak}</span></span>
               </div>
-              {githubConn && githubStats?.lastSynced && (
-                <span className="text-xs text-slate-400 font-medium">
-                  Last synced: {new Date(githubStats.lastSynced).toLocaleDateString()}
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                <div 
+                  onClick={() => setIsPeriodDropdownOpen(!isPeriodDropdownOpen)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 cursor-pointer select-none relative"
+                >
+                  <span>{selectedPeriod}</span>
+                  <span className="text-[10px]">▼</span>
+
+                  {isPeriodDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 shadow-lg rounded-xl py-1.5 w-28 z-50 text-slate-800 text-left font-medium">
+                      {['Current', '2026', '2025'].map((p) => (
+                        <div
+                          key={p}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPeriod(p);
+                            setIsPeriodDropdownOpen(false);
+                          }}
+                          className="px-3.5 py-1.5 hover:bg-slate-50 text-xs cursor-pointer"
+                        >
+                          {p}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span className="text-slate-400 font-bold text-xs select-none">≫</span>
+              </div>
             </div>
 
-            {githubConn && githubStats ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-2xl font-extrabold text-slate-900">{githubStats.repos}</span>
-                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Repos</span>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-2xl font-extrabold text-indigo-600">{githubStats.stars}</span>
-                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Stars</span>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-2xl font-extrabold text-emerald-600">{githubStats.followers}</span>
-                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Followers</span>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-2xl font-extrabold text-amber-600">{githubStats.following}</span>
-                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Following</span>
-                </div>
+            <div className="space-y-4">
+              {/* Flex row of month blocks */}
+              <div className="flex flex-nowrap gap-6 items-start overflow-x-auto py-2">
+                {monthlyGrid.map((month, mIdx) => (
+                  <div key={mIdx} className="flex flex-col items-center space-y-2 flex-shrink-0">
+                    {/* Month Grid box */}
+                    <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+                      <div className="grid grid-flow-col grid-rows-7 gap-1 select-none">
+                        {month.dates.map((d, i) => {
+                          if (d.isPadding) {
+                            return <div key={i} className="w-2.5 h-2.5 bg-transparent" />;
+                          }
+
+                          let color = '#EBEDF0'; // 0 submissions
+                          if (d.count > 0 && d.count <= 2) color = '#C6E48B';      // Light green
+                          else if (d.count > 2 && d.count <= 5) color = '#7BC96F'; // Medium green
+                          else if (d.count > 5 && d.count <= 9) color = '#239A3B'; // Solid green
+                          else if (d.count > 9) color = '#196127';                 // Dark green
+
+                          const padZero = (n) => n.toString().padStart(2, '0');
+                          const formattedDateStr = `${padZero(d.date.getDate())}/${padZero(d.date.getMonth() + 1)}/${d.date.getFullYear()}`;
+                          const tooltipText = `${d.count} Submission${d.count !== 1 ? 's' : ''} on ${formattedDateStr}`;
+
+                          return (
+                            <div
+                              key={i}
+                              className="w-2.5 h-2.5 rounded-[2px] transition-all duration-150 cursor-crosshair hover:scale-125 hover:shadow-sm"
+                              style={{ backgroundColor: color }}
+                              onMouseEnter={(e) => {
+                                const cardRect = e.currentTarget.closest('.consistency-card').getBoundingClientRect();
+                                const rect = e.target.getBoundingClientRect();
+                                setHoveredDay({
+                                  text: tooltipText,
+                                  x: rect.left - cardRect.left + rect.width / 2,
+                                  y: rect.top - cardRect.top - 38
+                                });
+                              }}
+                              onMouseLeave={() => setHoveredDay(null)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* Month Label below */}
+                    <span className="text-[10px] text-slate-500 font-bold">{month.monthName}</span>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="py-8 text-center text-slate-400 text-sm">
-                GitHub integration not configured.
+
+              {/* Scrollbar styled like in the screenshot */}
+              <div className="flex items-center gap-2 pt-2 text-slate-400 justify-center">
+                <span className="text-xs cursor-pointer hover:text-slate-600 font-bold select-none">&lsaquo;</span>
+                <div className="flex-grow max-w-xs bg-slate-100 h-1 rounded-full relative overflow-hidden">
+                  <div className="absolute right-0 top-0 h-full w-2/3 bg-slate-300 rounded-full"></div>
+                </div>
+                <span className="text-xs cursor-pointer hover:text-slate-600 font-bold select-none">&rsaquo;</span>
+              </div>
+            </div>
+
+            {/* Custom Tooltip absolute box */}
+            {hoveredDay && (
+              <div 
+                className="absolute bg-[#282828] text-white text-[10px] font-semibold px-3 py-1.5 rounded-lg shadow-md z-50 pointer-events-none transform -translate-x-1/2 transition-all duration-75"
+                style={{ left: hoveredDay.x, top: hoveredDay.y }}
+              >
+                {hoveredDay.text}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#282828]"></div>
               </div>
             )}
           </div>
-          {githubConn && githubStats?.languages?.length > 0 && (
-            <div className="h-60 pt-4 border-t border-slate-100">
-              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-2 text-center">Language Distribution</h4>
-              <ResponsiveContainer width="100%" height="90%">
-                <PieChart>
-                  <Pie
-                    data={githubStats.languages}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={3}
-                    dataKey="percentage"
-                    nameKey="name"
-                  >
-                    {githubStats.languages.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '12px' }}
-                    itemStyle={{ color: '#0f172a' }}
-                  />
-                  <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ fontSize: '11px', color: '#64748b' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
 
-        {/* Codeforces stats overview */}
-        <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 p-6 rounded-2xl space-y-6 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🏆</span>
-                <h3 className="text-lg font-bold text-slate-900">Codeforces Statistics</h3>
-              </div>
-              {codeforcesConn && codeforcesStats?.lastSynced && (
-                <span className="text-xs text-slate-400 font-medium">
-                  Last synced: {new Date(codeforcesStats.lastSynced).toLocaleDateString()}
-                </span>
+          {/* DSA solved counts and CP ranks side-by-side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* LeetCode stats breakdown */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">Problems Solved (DSA)</h4>
+              
+              {leetcodeStats ? (
+                <div className="space-y-4">
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <span className="text-3xl font-bold text-slate-900">{leetcodeStats.solvedCount}</span>
+                      <span className="text-xs text-slate-400 block">LeetCode Solved</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {/* Easy */}
+                    <div>
+                      <div className="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>Easy</span>
+                        <span className="font-semibold">{leetcodeStats.additionalMetrics?.easySolved || 0}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-emerald-500 h-full rounded-full" 
+                          style={{ width: `${leetcodeStats.solvedCount > 0 ? (leetcodeStats.additionalMetrics?.easySolved / leetcodeStats.solvedCount) * 100 : 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Medium */}
+                    <div>
+                      <div className="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>Medium</span>
+                        <span className="font-semibold">{leetcodeStats.additionalMetrics?.mediumSolved || 0}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-amber-500 h-full rounded-full" 
+                          style={{ width: `${leetcodeStats.solvedCount > 0 ? (leetcodeStats.additionalMetrics?.mediumSolved / leetcodeStats.solvedCount) * 100 : 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Hard */}
+                    <div>
+                      <div className="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>Hard</span>
+                        <span className="font-semibold">{leetcodeStats.additionalMetrics?.hardSolved || 0}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-rose-500 h-full rounded-full" 
+                          style={{ width: `${leetcodeStats.solvedCount > 0 ? (leetcodeStats.additionalMetrics?.hardSolved / leetcodeStats.solvedCount) * 100 : 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-400 text-xs">
+                  LeetCode stats unavailable.
+                </div>
               )}
             </div>
 
-            {codeforcesConn && codeforcesStats ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-2xl font-extrabold text-slate-900">{codeforcesStats.rating}</span>
-                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Rating</span>
+            {/* CP ratings side-by-side */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">Contest Rankings</h4>
+
+              <div className="grid grid-cols-2 gap-4 divide-x divide-slate-100">
+                {/* LeetCode */}
+                <div className="space-y-2 text-center">
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <span className="w-4 h-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.leetcode.icon }} />
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">LeetCode</span>
+                  </div>
+                  {leetcodeStats && leetcodeStats.rating > 0 ? (
+                    <div>
+                      <span className="text-2xl font-extrabold text-slate-800 block">{leetcodeStats.rating}</span>
+                      <span className="text-[10px] text-slate-400 block">Peak: {leetcodeStats.maxRating}</span>
+                      <span className="text-[10px] text-amber-600 font-bold block mt-1 uppercase">{leetcodeStats.rank}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-400 block py-4">Unrated</span>
+                  )}
                 </div>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-2xl font-extrabold text-indigo-600">{codeforcesStats.maxRating}</span>
-                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Max Rating</span>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-md font-bold text-rose-600 truncate block mt-1 leading-6">{codeforcesStats.rank}</span>
-                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Rank Tier</span>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-md font-bold text-amber-600 truncate block mt-1 leading-6">{codeforcesStats.maxRank || 'Unrated'}</span>
-                  <span className="block text-xs text-slate-400 mt-1 uppercase font-semibold">Max Rank Tier</span>
+
+                {/* Codeforces */}
+                <div className="space-y-2 text-center pl-4">
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <span className="w-4 h-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.codeforces.icon }} />
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Codeforces</span>
+                  </div>
+                  {codeforcesStats && codeforcesStats.rating > 0 ? (
+                    <div>
+                      <span className="text-2xl font-extrabold text-slate-800 block">{codeforcesStats.rating}</span>
+                      <span className="text-[10px] text-slate-400 block">Peak: {codeforcesStats.maxRating}</span>
+                      <span className="text-[10px] text-rose-600 font-bold block mt-1 uppercase">{codeforcesStats.rank}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-400 block py-4">Unrated</span>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div className="py-8 text-center text-slate-400 text-sm">
-                Codeforces integration not configured.
-              </div>
-            )}
+
+              {/* GitHub */}
+              {githubStats && (
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <span className="w-4 h-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.github.icon }} />
+                    <span>GitHub Stats:</span>
+                  </span>
+                  <span className="font-semibold">{githubStats.additionalMetrics?.stars || 0} Stars | {githubStats.additionalMetrics?.repos || 0} Repos</span>
+                </div>
+              )}
+            </div>
+
           </div>
-          {codeforcesConn && cfChartData.length > 0 && (
-            <div className="h-60 pt-4 border-t border-slate-100">
-              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-2 text-center">Rating Progression</h4>
-              <ResponsiveContainer width="100%" height="90%">
-                <AreaChart data={cfChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRating" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.01)" />
-                  <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '10px' }} />
-                  <YAxis stroke="#94a3b8" domain={['dataMin - 100', 'dataMax + 100']} style={{ fontSize: '10px' }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px' }}
-                    itemStyle={{ color: '#0f172a' }}
-                    labelStyle={{ color: '#f43f5e', fontWeight: 'bold' }}
-                    formatter={(value, name, props) => [`Rating: ${value} (Rank: ${props.payload.rank})`, props.payload.contest]}
-                  />
-                  <Area type="monotone" dataKey="rating" stroke="#f43f5e" strokeWidth={1.5} fillOpacity={1} fill="url(#colorRating)" />
-                </AreaChart>
-              </ResponsiveContainer>
+
+          {/* Unified Rating progression graph */}
+          {unifiedChartData.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">Rating Progression</h4>
+
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={unifiedChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '10px' }} />
+                    <YAxis stroke="#94a3b8" domain={['dataMin - 100', 'dataMax + 100']} style={{ fontSize: '10px' }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '11px' }}
+                      itemStyle={{ color: '#0f172a' }}
+                      labelStyle={{ color: '#64748b', fontWeight: 'bold' }}
+                      formatter={(value, name, props) => {
+                        const contestName = name === 'Codeforces' ? props.payload.cfContest : props.payload.lcContest;
+                        return [`${name} Rating: ${value}`, contestName || ''];
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', color: '#64748b' }} />
+                    <Line type="monotone" dataKey="Codeforces" stroke="#ef4444" strokeWidth={1.5} activeDot={{ r: 6 }} dot={{ r: 2 }} connectNulls />
+                    <Line type="monotone" dataKey="LeetCode" stroke="#f59e0b" strokeWidth={1.5} activeDot={{ r: 6 }} dot={{ r: 2 }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
+
+          {/* Badges / Awards Row and DSA Topic Analysis Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Badges and Awards Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">Awards & Badges</h4>
+              
+              {leetCodeBadges.length > 0 ? (
+                <div className="grid grid-cols-4 gap-4 max-h-[160px] overflow-y-auto pr-1 py-1">
+                  {leetCodeBadges.map((badge, idx) => (
+                    <div key={idx} className="flex flex-col items-center text-center space-y-1">
+                      <img 
+                        src={badge.icon} 
+                        alt={badge.name} 
+                        className="w-10 h-10 object-contain hover:scale-110 transition duration-200"
+                        title={badge.name}
+                      />
+                      <span className="text-[8px] text-slate-500 font-semibold truncate w-full max-w-[64px]" title={badge.name}>
+                        {badge.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-400 text-xs">
+                  No active badges found.
+                </div>
+              )}
+            </div>
+
+            {/* DSA Topic-wise solved counts Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">DSA Topic Analysis</h4>
+              
+              {dsaTags.length > 0 ? (
+                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 text-xs">
+                  {dsaTags.slice(0, 10).map((tag, idx) => (
+                    <div key={idx} className="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                      <span className="font-semibold text-slate-700 capitalize">{tag.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-500 text-[9px] rounded-full font-mono">
+                          {tag.category}
+                        </span>
+                        <span className="font-bold text-slate-900 w-8 text-right">{tag.solved}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {dsaTags.length > 10 && (
+                    <p className="text-[10px] text-slate-400 text-center pt-1">+ {dsaTags.length - 10} more topics solved</p>
+                  )}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-400 text-xs">
+                  Topic analysis metrics unavailable.
+                </div>
+              )}
+            </div>
+
+          </div>
+
         </div>
+
       </div>
     </div>
   );

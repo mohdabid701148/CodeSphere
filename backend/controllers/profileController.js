@@ -1,7 +1,6 @@
 import User from '../models/User.js';
 import ConnectedAccount from '../models/ConnectedAccount.js';
-import GitHubStats from '../models/GitHubStats.js';
-import CodeforcesStats from '../models/CodeforcesStats.js';
+import PlatformStats from '../models/PlatformStats.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import jwt from 'jsonwebtoken';
@@ -16,10 +15,19 @@ export const getProfileBySlug = async (req, res) => {
 
   // Privacy checking logic
   if (!user.isPublic) {
+    const authHeader = req.header('Authorization');
     let isOwner = false;
 
-    if (req.user && req.user._id.toString() === user._id.toString()) {
-      isOwner = true;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded._id === user._id.toString()) {
+          isOwner = true;
+        }
+      } catch (e) {
+        // Token verification failed, remains false
+      }
     }
 
     if (!isOwner) {
@@ -28,8 +36,11 @@ export const getProfileBySlug = async (req, res) => {
   }
 
   const connections = await ConnectedAccount.find({ userId: user._id, connected: true });
-  const githubStats = await GitHubStats.findOne({ userId: user._id });
-  const codeforcesStats = await CodeforcesStats.findOne({ userId: user._id });
+  const statsList = await PlatformStats.find({ userId: user._id });
+
+  const githubStats = statsList.find(s => s.platform === 'github');
+  const codeforcesStats = statsList.find(s => s.platform === 'codeforces');
+  const leetcodeStats = statsList.find(s => s.platform === 'leetcode');
 
   res.status(200).json(
     new ApiResponse(
@@ -47,7 +58,9 @@ export const getProfileBySlug = async (req, res) => {
         },
         connections,
         githubStats: githubStats || null,
-        codeforcesStats: codeforcesStats || null
+        codeforcesStats: codeforcesStats || null,
+        leetcodeStats: leetcodeStats || null,
+        allStats: statsList
       },
       'Public portfolio fetched successfully'
     )

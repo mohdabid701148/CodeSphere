@@ -1,22 +1,18 @@
 import { Router } from 'express';
 import {
-  syncGitHubStats,
-  syncCodeforcesStats,
+  syncPlatformStats,
   syncAllStats,
   getDashboardStats,
-  getGitHubStats,
-  getCodeforcesStats
+  getPlatformStats
 } from '../controllers/syncController.js';
 import { verifyJWT } from '../middleware/authMiddleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
 
-router.post('/github', verifyJWT, asyncHandler(syncGitHubStats));
-router.post('/codeforces', verifyJWT, asyncHandler(syncCodeforcesStats));
-router.post('/all', verifyJWT, asyncHandler(syncAllStats));
 router.get('/', verifyJWT, asyncHandler(getDashboardStats));
-router.get('/github', verifyJWT, asyncHandler(getGitHubStats));
-router.get('/codeforces', verifyJWT, asyncHandler(getCodeforcesStats));
+router.post('/all', verifyJWT, asyncHandler(syncAllStats));
+router.post('/:platform', verifyJWT, asyncHandler(syncPlatformStats));
+router.get('/:platform', verifyJWT, asyncHandler(getPlatformStats));
 
 export default router;

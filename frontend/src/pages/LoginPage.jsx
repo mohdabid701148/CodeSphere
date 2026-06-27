@@ -43,10 +43,6 @@ export default function LoginPage() {
     window.location.href = 'http://localhost:5000/auth/google';
   };
 
-  const handleMockLogin = () => {
-    window.location.href = 'http://localhost:5000/auth/google?mock=true';
-  };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
       <div className="bg-white border border-slate-200 shadow-xl shadow-slate-100/80 max-w-md w-full p-8 rounded-2xl space-y-6">
@@ -78,19 +74,6 @@ export default function LoginPage() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.96 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
             </svg>
             Continue with Google
-          </button>
-
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase tracking-wider font-semibold">Local Testing</span>
-            <div className="flex-grow border-t border-slate-200"></div>
-          </div>
-
-          <button
-            onClick={handleMockLogin}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold hover:bg-indigo-100 hover:text-indigo-800 transition-all duration-200 cursor-pointer"
-          >
-            Continue with Mock User
           </button>
         </div>
 

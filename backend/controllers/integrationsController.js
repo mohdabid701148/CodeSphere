@@ -1,46 +1,8 @@
 import ConnectedAccount from '../models/ConnectedAccount.js';
+import PlatformStats from '../models/PlatformStats.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
-
-// Validate GitHub username
-const validateGitHubUser = async (username) => {
-  try {
-    const res = await fetch(`https://api.github.com/users/${username}`, {
-      headers: { 'User-Agent': 'CodeSphere-App' }
-    });
-
-    if (res.status === 404) {
-      return { valid: false, message: 'GitHub username does not exist' };
-    }
-
-    if (res.status === 403) {
-      console.warn(`GitHub API Rate Limited on validation. Allowing connection for: ${username}`);
-      return { valid: true, warning: 'GitHub API rate limit reached. Profile connected but validation bypassed.' };
-    }
-
-    return { valid: res.ok };
-  } catch (error) {
-    console.error('GitHub Validation Error:', error);
-    return { valid: true, warning: 'GitHub API offline. Connected without live validation.' };
-  }
-};
-
-// Validate Codeforces username
-const validateCodeforcesUser = async (username) => {
-  try {
-    const res = await fetch(`https://codeforces.com/api/user.info?handles=${username}`);
-    const data = await res.json();
-
-    if (data.status === 'FAILED') {
-      return { valid: false, message: data.comment || 'Codeforces user not found' };
-    }
-
-    return { valid: data.status === 'OK' };
-  } catch (error) {
-    console.error('Codeforces Validation Error:', error);
-    return { valid: true, warning: 'Codeforces API offline. Connected without live validation.' };
-  }
-};
+import { getPlatformStrategy, getSupportedPlatforms } from '../integrations/index.js';
 
 export const connectPlatform = async (req, res) => {
   const { platform } = req.params;
@@ -50,17 +12,14 @@ export const connectPlatform = async (req, res) => {
     throw new ApiError(400, 'Username is required');
   }
 
-  if (!['github', 'codeforces'].includes(platform)) {
-    throw new ApiError(400, 'Invalid platform name. Must be github or codeforces.');
+  const supportedPlatforms = getSupportedPlatforms();
+  if (!supportedPlatforms.includes(platform)) {
+    throw new ApiError(400, `Invalid platform name. Must be one of: ${supportedPlatforms.join(', ')}.`);
   }
 
-  // Run validation checks
-  let validationResult = { valid: true };
-  if (platform === 'github') {
-    validationResult = await validateGitHubUser(username);
-  } else if (platform === 'codeforces') {
-    validationResult = await validateCodeforcesUser(username);
-  }
+  // Run validation checks via strategy class
+  const strategy = getPlatformStrategy(platform);
+  const validationResult = await strategy.validateUser(username);
 
   if (!validationResult.valid) {
     throw new ApiError(400, validationResult.message || `Invalid ${platform} username.`);
@@ -79,7 +38,7 @@ export const connectPlatform = async (req, res) => {
       platform,
       username,
       connected: true,
-      syncStatus: 'idle'
+      syncStatus: 'idle',
     });
   }
 
@@ -87,7 +46,7 @@ export const connectPlatform = async (req, res) => {
     new ApiResponse(
       200,
       account,
-      `${platform === 'github' ? 'GitHub' : 'Codeforces'} profile connected successfully. ${validationResult.warning || ''}`
+      `${platform.toUpperCase()} profile connected successfully. ${validationResult.warning || ''}`
     )
   );
 };
@@ -101,7 +60,8 @@ export const updateConnection = async (req, res) => {
   const { platform } = req.params;
   const { username, connected } = req.body;
 
-  if (!['github', 'codeforces'].includes(platform)) {
+  const supportedPlatforms = getSupportedPlatforms();
+  if (!supportedPlatforms.includes(platform)) {
     throw new ApiError(400, 'Invalid platform name');
   }
 
@@ -112,12 +72,8 @@ export const updateConnection = async (req, res) => {
   }
 
   if (username && username !== account.username) {
-    let validationResult = { valid: true };
-    if (platform === 'github') {
-      validationResult = await validateGitHubUser(username);
-    } else if (platform === 'codeforces') {
-      validationResult = await validateCodeforcesUser(username);
-    }
+    const strategy = getPlatformStrategy(platform);
+    const validationResult = await strategy.validateUser(username);
 
     if (!validationResult.valid) {
       throw new ApiError(400, validationResult.message || `Invalid username for ${platform}`);
@@ -139,7 +95,8 @@ export const updateConnection = async (req, res) => {
 export const disconnectPlatform = async (req, res) => {
   const { platform } = req.params;
 
-  if (!['github', 'codeforces'].includes(platform)) {
+  const supportedPlatforms = getSupportedPlatforms();
+  if (!supportedPlatforms.includes(platform)) {
     throw new ApiError(400, 'Invalid platform name');
   }
 
@@ -148,6 +105,9 @@ export const disconnectPlatform = async (req, res) => {
   if (result.deletedCount === 0) {
     throw new ApiError(404, `No connected ${platform} profile found to disconnect.`);
   }
+
+  // Delete matching statistics document as well
+  await PlatformStats.deleteOne({ userId: req.user._id, platform });
 
   res.status(200).json(new ApiResponse(200, {}, `${platform} connection removed successfully`));
 };
