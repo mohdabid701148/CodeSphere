@@ -27,8 +27,13 @@ export const initiateLogin = async (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
+    console.log('[OAuth Diagnostic] Loading env variables...');
+    console.log('[OAuth Diagnostic] GOOGLE_CLIENT_ID:', clientId ? `${clientId.substring(0, 10)}...` : 'undefined');
+    console.log('[OAuth Diagnostic] GOOGLE_CLIENT_SECRET:', clientSecret ? `${clientSecret.substring(0, 6)}...` : 'undefined');
+
     if (!clientId || clientId === 'your-google-client-id' || !clientSecret || clientSecret === 'your-google-client-secret') {
-      throw new Error('Google OAuth credentials are not configured. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env.');
+      const details = `Loaded GOOGLE_CLIENT_ID: "${clientId || 'undefined'}", GOOGLE_CLIENT_SECRET: "${clientSecret || 'undefined'}"`;
+      throw new Error(`Google OAuth credentials are not configured. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env. Details: ${details}`);
     }
 
     const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback`;
