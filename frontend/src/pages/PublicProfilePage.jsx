@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import PlatformRatingChart from '../components/PlatformRatingChart';
 import { PLATFORM_CONFIGS } from '../config/platforms.js';
 import {
   ResponsiveContainer,
@@ -616,33 +617,27 @@ export default function PublicProfilePage() {
 
           </div>
 
-          {/* Unified Rating progression graph */}
-          {unifiedChartData.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <h4 className="text-xs text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 pb-2">Rating Progression</h4>
+          {/* Individual Rating Progression Charts */}
+          {codeforcesStats?.history && codeforcesStats.history.length > 0 && (
+            <PlatformRatingChart
+              platformName="Codeforces"
+              history={codeforcesStats.history}
+              currentRating={codeforcesStats?.rating || 0}
+              maxRating={codeforcesStats?.maxRating || 0}
+              themeColor="#ef4444"
+              iconSvg={PLATFORM_CONFIGS.codeforces.icon}
+            />
+          )}
 
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={unifiedChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '10px' }} />
-                    <YAxis stroke="#94a3b8" domain={['dataMin - 100', 'dataMax + 100']} style={{ fontSize: '10px' }} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '11px' }}
-                      itemStyle={{ color: '#0f172a' }}
-                      labelStyle={{ color: '#64748b', fontWeight: 'bold' }}
-                      formatter={(value, name, props) => {
-                        const contestName = name === 'Codeforces' ? props.payload.cfContest : props.payload.lcContest;
-                        return [`${name} Rating: ${value}`, contestName || ''];
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '11px', color: '#64748b' }} />
-                    <Line type="monotone" dataKey="Codeforces" stroke="#ef4444" strokeWidth={1.5} activeDot={{ r: 6 }} dot={{ r: 2 }} connectNulls />
-                    <Line type="monotone" dataKey="LeetCode" stroke="#f59e0b" strokeWidth={1.5} activeDot={{ r: 6 }} dot={{ r: 2 }} connectNulls />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+          {leetcodeStats?.history && leetcodeStats.history.length > 0 && (
+            <PlatformRatingChart
+              platformName="LeetCode"
+              history={leetcodeStats.history}
+              currentRating={leetcodeStats?.rating || 0}
+              maxRating={leetcodeStats?.maxRating || 0}
+              themeColor="#f59e0b"
+              iconSvg={PLATFORM_CONFIGS.leetcode.icon}
+            />
           )}
 
           {/* Badges / Awards Row and DSA Topic Analysis Grid */}

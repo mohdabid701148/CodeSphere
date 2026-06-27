@@ -46,6 +46,7 @@ export const initiateLogin = async (req, res) => {
       redirectUri
     )}&scope=openid%20profile%20email`;
 
+    console.log('REDIRECTING TO:', googleAuthUrl);
     res.redirect(googleAuthUrl);
   } catch (error) {
     console.error('OAuth Initiate Error:', error);
