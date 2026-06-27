@@ -45,13 +45,39 @@ export default function PlatformRatingChart({
   const theme = getThemeClasses(themeColor);
   const chartId = `color-${platformName.toLowerCase()}`;
 
-  // Reverse history if it's currently sorted newest to oldest.
-  // Wait, let's assume it is chronologically ordered based on the graph in the screenshot.
-  // We'll map the data to ensure Recharts can use it easily.
-  const chartData = history.map((item, index) => ({
-    ...item,
-    matchName: `Match ${index + 1}`
-  }));
+  const chartData = history.map((item, index) => {
+    const delta = index > 0 ? item.value - history[index - 1].value : null;
+    return {
+      ...item,
+      matchName: `Match ${index + 1}`,
+      delta
+    };
+  });
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const { delta, description, value } = data;
+      
+      const isPositive = delta > 0;
+      const isNegative = delta < 0;
+      const deltaColor = isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-slate-500';
+      const sign = isPositive ? '+' : '';
+
+      return (
+        <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-md text-[11px] max-w-xs">
+          <div className="text-slate-500 font-bold mb-2 break-words">{label} - {description}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-900 font-semibold">Rating: {value}</span>
+            {delta !== null && (
+               <span className={`font-bold ${deltaColor}`}>({sign}{delta})</span>
+            )}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6 w-full">
@@ -129,16 +155,7 @@ export default function PlatformRatingChart({
               axisLine={false}
               tickLine={false}
             />
-            <Tooltip
-              contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '11px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-              itemStyle={{ color: '#0f172a' }}
-              labelStyle={{ color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}
-              formatter={(value) => [`${value}`, 'Rating']}
-              labelFormatter={(label, payload) => {
-                const desc = payload && payload.length > 0 ? payload[0].payload.description : '';
-                return desc ? `${label} - ${desc}` : label;
-              }}
-            />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
             <Area 
               type="monotone" 
               dataKey="value" 
