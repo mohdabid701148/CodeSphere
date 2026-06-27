@@ -614,7 +614,7 @@ export default function PublicProfilePage() {
                <div className="space-y-2 text-center pt-2">
                  <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">LeetCode</h5>
                  <div className="flex items-center justify-center gap-6">
-                   <div className="w-16 h-16 opacity-20 grayscale flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.leetcode.icon }}></div>
+                   <div className="w-16 h-16 flex items-center justify-center drop-shadow-sm" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.leetcode.icon }}></div>
                    <div className="text-center">
                      <span className="text-4xl font-black text-slate-900 block">{leetcodeStats?.rating || 0}</span>
                      <span className="text-[10px] text-slate-500 block text-center mt-1">(max : {leetcodeStats?.maxRating || 0})</span>
@@ -627,9 +627,10 @@ export default function PublicProfilePage() {
                {/* Codeforces */}
                <div className="space-y-2 text-center pb-2">
                  <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Codeforces</h5>
-                 <div className="flex items-center justify-center gap-8">
-                   <span className="text-2xl font-bold text-emerald-600 capitalize">{codeforcesStats?.rank || 'Unrated'}</span>
+                 <div className="flex items-center justify-center gap-6">
+                   <div className="w-16 h-16 flex items-center justify-center drop-shadow-sm" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.codeforces.icon }}></div>
                    <div className="text-center">
+                     <span className="text-sm font-bold text-emerald-600 capitalize block mb-0.5">{codeforcesStats?.rank || 'Unrated'}</span>
                      <span className="text-4xl font-black text-slate-900 block">{codeforcesStats?.rating || 0}</span>
                      <span className="text-[10px] text-slate-500 block text-center mt-1">(max : {codeforcesStats?.maxRating || 0})</span>
                    </div>
