@@ -30,6 +30,9 @@ export default function Navbar() {
             <Link to="/dashboard" className="text-slate-600 hover:text-slate-900 transition text-sm font-medium">
               Dashboard
             </Link>
+            <Link to="/events" className="text-slate-600 hover:text-slate-900 transition text-sm font-medium">
+              Events
+            </Link>
             <Link to="/connect" className="text-slate-600 hover:text-slate-900 transition text-sm font-medium">
               Connect
             </Link>

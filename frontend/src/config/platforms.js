@@ -43,6 +43,16 @@ export const PLATFORM_CONFIGS = {
       { key: 'rank', label: 'Rank Tier' },
     ],
   },
+  codechef: {
+    key: 'codechef',
+    title: 'CodeChef',
+    icon: `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.12 6.78l-5.6 5.6-2.52-2.52-1.42 1.42 3.94 3.94 7.02-7.02-1.42-1.42z" fill="#5b4636"/></svg>`, // Basic icon since CodeChef SVGs are complex
+    urlPrefix: 'https://www.codechef.com/users/',
+    metrics: [
+      { key: 'rating', label: 'Rating' },
+      { key: 'rank', label: 'Rank Tier' },
+    ],
+  },
 };
 
 export const getSupportedPlatforms = () => Object.keys(PLATFORM_CONFIGS);

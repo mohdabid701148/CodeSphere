@@ -13,6 +13,7 @@ import authRouter from './routes/auth.js';
 import integrationsRouter from './routes/integrations.js';
 import syncRouter from './routes/sync.js';
 import profileRouter from './routes/profile.js';
+import contestsRouter from './routes/contestsRoutes.js';
 
 // Environment variable validation
 const requiredEnvVars = ['MONGODB_URI', 'ACCESS_TOKEN_SECRET', 'REFRESH_TOKEN_SECRET', 'NODE_ENV'];
@@ -60,6 +61,7 @@ app.use('/auth', strictLimiter, authRouter);
 app.use('/integrations', integrationsRouter);
 app.use('/sync', strictLimiter, syncRouter);
 app.use('/profile', profileRouter);
+app.use('/contests', contestsRouter);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
