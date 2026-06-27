@@ -128,6 +128,7 @@ export const getDashboardStats = async (req, res) => {
   const githubStats = statsList.find(s => s.platform === 'github');
   const codeforcesStats = statsList.find(s => s.platform === 'codeforces');
   const leetcodeStats = statsList.find(s => s.platform === 'leetcode');
+  const atcoderStats = statsList.find(s => s.platform === 'atcoder');
 
   res.status(200).json(
     new ApiResponse(
@@ -138,6 +139,7 @@ export const getDashboardStats = async (req, res) => {
         githubStats: githubStats || null,
         codeforcesStats: codeforcesStats || null,
         leetcodeStats: leetcodeStats || null,
+        atcoderStats: atcoderStats || null,
         allStats: statsList, // Unified data
         syncLogs
       },

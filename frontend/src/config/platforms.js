@@ -32,6 +32,17 @@ export const PLATFORM_CONFIGS = {
       { key: 'rank', label: 'Rank Tier' },
     ],
   },
+  atcoder: {
+    key: 'atcoder',
+    title: 'AtCoder',
+    icon: `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#222"/><path d="M12 5L7 16H9.5L10.5 13H13.5L14.5 16H17L12 5ZM11 11.5L12 8.5L13 11.5H11Z" fill="white"/></svg>`,
+    urlPrefix: 'https://atcoder.jp/users/',
+    metrics: [
+      { key: 'rating', label: 'Rating' },
+      { key: 'maxRating', label: 'Max Rating' },
+      { key: 'rank', label: 'Rank Tier' },
+    ],
+  },
 };
 
 export const getSupportedPlatforms = () => Object.keys(PLATFORM_CONFIGS);

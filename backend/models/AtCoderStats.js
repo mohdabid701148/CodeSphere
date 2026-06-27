@@ -1,15 +1,10 @@
 import mongoose from 'mongoose';
 
-const platformStatsSchema = new mongoose.Schema({
+const atcoderStatsSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-  },
-  platform: {
-    type: String,
-    required: true,
-    enum: ['github', 'codeforces', 'leetcode', 'atcoder'],
   },
   rating: {
     type: Number,
@@ -53,9 +48,6 @@ const platformStatsSchema = new mongoose.Schema({
   },
 });
 
-// Compound unique index to allow only one stats record per user per platform
-platformStatsSchema.index({ userId: 1, platform: 1 }, { unique: true });
+const AtCoderStats = mongoose.model('AtCoderStats', atcoderStatsSchema);
 
-const PlatformStats = mongoose.model('PlatformStats', platformStatsSchema);
-
-export default PlatformStats;
+export default AtCoderStats;

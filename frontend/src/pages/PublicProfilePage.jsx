@@ -100,22 +100,23 @@ export default function PublicProfilePage() {
     );
   }
 
-  const { user, connections = [], githubStats, codeforcesStats, leetcodeStats, allStats = [] } = data || {};
+  const { user, connections = [], githubStats, codeforcesStats, leetcodeStats, atcoderStats, allStats = [] } = data || {};
 
   // Find active connections
   const getPlatformConn = (platform) => connections.find(c => c.platform === platform && c.connected);
 
   // Compute aggregated stats
-  const totalSolved = (leetcodeStats?.solvedCount || 0) + (codeforcesStats?.solvedCount || 0);
-  const totalContests = (leetcodeStats?.contestsCount || 0) + (codeforcesStats?.contestsCount || 0);
-  const totalActiveDays = (leetcodeStats?.additionalMetrics?.activeDays || 0) + (codeforcesStats?.additionalMetrics?.activeDays || 0);
-  const cpSolved = codeforcesStats?.solvedCount || 0;
+  const totalSolved = (leetcodeStats?.solvedCount || 0) + (codeforcesStats?.solvedCount || 0) + (atcoderStats?.solvedCount || 0);
+  const totalContests = (leetcodeStats?.contestsCount || 0) + (codeforcesStats?.contestsCount || 0) + (atcoderStats?.contestsCount || 0);
+  const totalActiveDays = (leetcodeStats?.additionalMetrics?.activeDays || 0) + (codeforcesStats?.additionalMetrics?.activeDays || 0) + (atcoderStats?.additionalMetrics?.activeDays || 0);
+  const cpSolved = (codeforcesStats?.solvedCount || 0) + (atcoderStats?.solvedCount || 0);
 
   // Prepare unified rating chart data
   const cfHistory = codeforcesStats?.history || [];
   const lcHistory = leetcodeStats?.history || [];
+  const acHistory = atcoderStats?.history || [];
   
-  const chartDataLength = Math.max(cfHistory.length, lcHistory.length);
+  const chartDataLength = Math.max(cfHistory.length, lcHistory.length, acHistory.length);
   const unifiedChartData = [];
   for (let i = 0; i < chartDataLength; i++) {
     const dataPoint = { name: `Match ${i + 1}` };
@@ -127,6 +128,10 @@ export default function PublicProfilePage() {
       dataPoint.LeetCode = lcHistory[i].value;
       dataPoint.lcContest = lcHistory[i].description;
     }
+    if (i < acHistory.length) {
+      dataPoint.AtCoder = acHistory[i].value;
+      dataPoint.acContest = acHistory[i].description;
+    }
     unifiedChartData.push(dataPoint);
   }
 
@@ -135,7 +140,7 @@ export default function PublicProfilePage() {
   const dsaTags = leetcodeStats?.additionalMetrics?.tags || [];
 
   // Flat calendar dates for calculating streaks
-  const getFlatCalendarData = (lcCalendar = {}, cfCalendar = {}, period = 'Current') => {
+  const getFlatCalendarData = (lcCalendar = {}, cfCalendar = {}, acCalendar = {}, period = 'Current') => {
     const dates = [];
     const today = new Date();
     
@@ -145,7 +150,7 @@ export default function PublicProfilePage() {
       const currentDate = new Date(startDate);
       while (currentDate <= today) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0);
+        const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0) + (acCalendar[dateStr] || 0);
         dates.push({
           date: new Date(currentDate),
           dateStr,
@@ -160,7 +165,7 @@ export default function PublicProfilePage() {
       const currentDate = new Date(startDate);
       while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0);
+        const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0) + (acCalendar[dateStr] || 0);
         dates.push({
           date: new Date(currentDate),
           dateStr,
@@ -175,11 +180,12 @@ export default function PublicProfilePage() {
   const calendarDates = getFlatCalendarData(
     leetcodeStats?.additionalMetrics?.calendar,
     codeforcesStats?.additionalMetrics?.calendar,
+    atcoderStats?.additionalMetrics?.calendar,
     selectedPeriod
   );
 
   // Grouped monthly grids for rendering heatmap blocks
-  const getMonthlyCalendarGrid = (lcCalendar = {}, cfCalendar = {}, period = 'Current') => {
+  const getMonthlyCalendarGrid = (lcCalendar = {}, cfCalendar = {}, acCalendar = {}, period = 'Current') => {
     const monthsData = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -209,7 +215,7 @@ export default function PublicProfilePage() {
           dates.push({ isPadding: true });
         } else {
           const dateStr = currentDate.toISOString().split('T')[0];
-          const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0);
+          const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0) + (acCalendar[dateStr] || 0);
           dates.push({
             isPadding: false,
             date: currentDate,
@@ -250,6 +256,7 @@ export default function PublicProfilePage() {
   const monthlyGrid = getMonthlyCalendarGrid(
     leetcodeStats?.additionalMetrics?.calendar,
     codeforcesStats?.additionalMetrics?.calendar,
+    atcoderStats?.additionalMetrics?.calendar,
     selectedPeriod
   );
 
@@ -398,6 +405,13 @@ export default function PublicProfilePage() {
                   <span className="font-semibold text-slate-700 text-sm">CodeForces</span>
                 </div>
                 <span className="font-bold text-slate-800">{codeforcesStats?.contestsCount || 0}</span>
+              </div>
+              <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-5 h-5 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.atcoder.icon }} />
+                  <span className="font-semibold text-slate-700 text-sm">AtCoder</span>
+                </div>
+                <span className="font-bold text-slate-800">{atcoderStats?.contestsCount || 0}</span>
               </div>
             </div>
           </div>
@@ -577,28 +591,38 @@ export default function PublicProfilePage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={(codeforcesStats?.solvedCount || 0) > 0 ? [{ name: 'Codeforces', value: codeforcesStats.solvedCount, color: '#facc15' }] : [{ name: 'None', value: 1, color: '#f1f5f9' }]}
+                          data={cpSolved > 0 ? [
+                            { name: 'Codeforces', value: codeforcesStats?.solvedCount || 0, color: '#facc15' },
+                            { name: 'AtCoder', value: atcoderStats?.solvedCount || 0, color: '#222222' }
+                          ].filter(d => d.value > 0) : [{ name: 'None', value: 1, color: '#f1f5f9' }]}
                           innerRadius={45}
                           outerRadius={60}
                           dataKey="value"
                           stroke="none"
                         >
-                          {((codeforcesStats?.solvedCount || 0) > 0 ? [{ name: 'Codeforces', value: codeforcesStats.solvedCount, color: '#facc15' }] : [{ name: 'None', value: 1, color: '#f1f5f9' }]).map((entry, index) => (
+                          {(cpSolved > 0 ? [
+                            { name: 'Codeforces', value: codeforcesStats?.solvedCount || 0, color: '#facc15' },
+                            { name: 'AtCoder', value: atcoderStats?.solvedCount || 0, color: '#222222' }
+                          ].filter(d => d.value > 0) : [{ name: 'None', value: 1, color: '#f1f5f9' }]).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xl font-black text-slate-900">{codeforcesStats?.solvedCount || 0}</span>
+                      <span className="text-xl font-black text-slate-900">{cpSolved}</span>
                     </div>
                   </div>
 
                   {/* Stats Pills */}
-                  <div className="flex-1 max-w-[140px]">
+                  <div className="flex-1 max-w-[140px] space-y-2">
                     <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
                       <span className="text-xs font-semibold text-amber-500">Codeforces</span>
                       <span className="text-xs font-bold text-slate-700">{codeforcesStats?.solvedCount || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
+                      <span className="text-xs font-semibold text-slate-900">AtCoder</span>
+                      <span className="text-xs font-bold text-slate-700">{atcoderStats?.solvedCount || 0}</span>
                     </div>
                   </div>
 
@@ -637,6 +661,21 @@ export default function PublicProfilePage() {
                  </div>
                </div>
 
+               <div className="border-t border-slate-100 my-6 w-3/4 mx-auto"></div>
+
+               {/* AtCoder */}
+               <div className="space-y-2 text-center pb-2">
+                 <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">AtCoder</h5>
+                 <div className="flex items-center justify-center gap-6">
+                   <div className="w-16 h-16 flex items-center justify-center drop-shadow-sm" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.atcoder.icon }}></div>
+                   <div className="text-center">
+                     <span className="text-sm font-bold text-slate-900 capitalize block mb-0.5">{atcoderStats?.rank || 'Unrated'}</span>
+                     <span className="text-4xl font-black text-slate-900 block">{atcoderStats?.rating || 0}</span>
+                     <span className="text-[10px] text-slate-500 block text-center mt-1">(max : {atcoderStats?.maxRating || 0})</span>
+                   </div>
+                 </div>
+               </div>
+
               {/* GitHub */}
               {githubStats && (
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
@@ -671,6 +710,17 @@ export default function PublicProfilePage() {
               maxRating={leetcodeStats?.maxRating || 0}
               themeColor="#f59e0b"
               iconSvg={PLATFORM_CONFIGS.leetcode.icon}
+            />
+          )}
+
+          {atcoderStats?.history && atcoderStats.history.length > 0 && (
+            <PlatformRatingChart
+              platformName="AtCoder"
+              history={atcoderStats.history}
+              currentRating={atcoderStats?.rating || 0}
+              maxRating={atcoderStats?.maxRating || 0}
+              themeColor="#222222"
+              iconSvg={PLATFORM_CONFIGS.atcoder.icon}
             />
           )}
 

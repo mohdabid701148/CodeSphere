@@ -1,11 +1,13 @@
 import { GitHubStrategy } from './GitHubStrategy.js';
 import { CodeforcesStrategy } from './CodeforcesStrategy.js';
 import { LeetCodeStrategy } from './LeetCodeStrategy.js';
+import { AtCoderStrategy } from './AtCoderStrategy.js';
 
-const strategies = {
+export const strategies = {
   github: new GitHubStrategy(),
   codeforces: new CodeforcesStrategy(),
   leetcode: new LeetCodeStrategy(),
+  atcoder: new AtCoderStrategy(),
 };
 
 /**

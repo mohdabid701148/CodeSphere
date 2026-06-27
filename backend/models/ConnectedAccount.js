@@ -9,7 +9,7 @@ const connectedAccountSchema = new mongoose.Schema(
     },
     platform: {
       type: String,
-      enum: ['github', 'codeforces', 'leetcode'],
+      enum: ['github', 'codeforces', 'leetcode', 'atcoder'],
       required: true,
     },
     username: {
