@@ -390,14 +390,14 @@ export default function PublicProfilePage() {
                   <span className="w-5 h-5 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.leetcode.icon }} />
                   <span className="font-semibold text-slate-700 text-sm">LeetCode</span>
                 </div>
-                <span className="font-bold text-slate-800">{leetcodeStats?.ratingHistory?.length || 0}</span>
+                <span className="font-bold text-slate-800">{leetcodeStats?.contestsCount || 0}</span>
               </div>
               <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-3">
                 <div className="flex items-center gap-3">
                   <span className="w-5 h-5 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: PLATFORM_CONFIGS.codeforces.icon }} />
                   <span className="font-semibold text-slate-700 text-sm">CodeForces</span>
                 </div>
-                <span className="font-bold text-slate-800">{codeforcesStats?.ratingHistory?.length || 0}</span>
+                <span className="font-bold text-slate-800">{codeforcesStats?.contestsCount || 0}</span>
               </div>
             </div>
           </div>
@@ -577,20 +577,20 @@ export default function PublicProfilePage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={(codeforcesStats?.additionalMetrics?.totalSolved || 0) > 0 ? [{ name: 'Codeforces', value: codeforcesStats.additionalMetrics.totalSolved, color: '#facc15' }] : [{ name: 'None', value: 1, color: '#f1f5f9' }]}
+                          data={(codeforcesStats?.solvedCount || 0) > 0 ? [{ name: 'Codeforces', value: codeforcesStats.solvedCount, color: '#facc15' }] : [{ name: 'None', value: 1, color: '#f1f5f9' }]}
                           innerRadius={45}
                           outerRadius={60}
                           dataKey="value"
                           stroke="none"
                         >
-                          {((codeforcesStats?.additionalMetrics?.totalSolved || 0) > 0 ? [{ name: 'Codeforces', value: codeforcesStats.additionalMetrics.totalSolved, color: '#facc15' }] : [{ name: 'None', value: 1, color: '#f1f5f9' }]).map((entry, index) => (
+                          {((codeforcesStats?.solvedCount || 0) > 0 ? [{ name: 'Codeforces', value: codeforcesStats.solvedCount, color: '#facc15' }] : [{ name: 'None', value: 1, color: '#f1f5f9' }]).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xl font-black text-slate-900">{codeforcesStats?.additionalMetrics?.totalSolved || 0}</span>
+                      <span className="text-xl font-black text-slate-900">{codeforcesStats?.solvedCount || 0}</span>
                     </div>
                   </div>
 
@@ -598,7 +598,7 @@ export default function PublicProfilePage() {
                   <div className="flex-1 max-w-[140px]">
                     <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
                       <span className="text-xs font-semibold text-amber-500">Codeforces</span>
-                      <span className="text-xs font-bold text-slate-700">{codeforcesStats?.additionalMetrics?.totalSolved || 0}</span>
+                      <span className="text-xs font-bold text-slate-700">{codeforcesStats?.solvedCount || 0}</span>
                     </div>
                   </div>
 
