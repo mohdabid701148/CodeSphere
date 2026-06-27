@@ -451,9 +451,8 @@ export default function PublicProfilePage() {
                           else if (d.count > 5 && d.count <= 9) color = '#239A3B'; // Solid green
                           else if (d.count > 9) color = '#196127';                 // Dark green
 
-                          const padZero = (n) => n.toString().padStart(2, '0');
-                          const formattedDateStr = `${padZero(d.date.getDate())}/${padZero(d.date.getMonth() + 1)}/${d.date.getFullYear()}`;
-                          const tooltipText = `${d.count} Submission${d.count !== 1 ? 's' : ''} on ${formattedDateStr}`;
+                          const formattedDateStr = d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                          const tooltipText = `${d.count} submission${d.count !== 1 ? 's' : ''} on ${formattedDateStr}`;
 
                           return (
                             <div
@@ -494,7 +493,7 @@ export default function PublicProfilePage() {
             {/* Custom Tooltip absolute box */}
             {hoveredDay && (
               <div 
-                className="absolute bg-[#282828] text-white text-[10px] font-semibold px-3 py-1.5 rounded-lg shadow-md z-50 pointer-events-none transform -translate-x-1/2 transition-all duration-75"
+                className="absolute bg-[#282828] text-white text-[11px] font-medium px-3 py-1.5 rounded-[4px] shadow-md z-50 pointer-events-none transform -translate-x-1/2 transition-all duration-75 whitespace-nowrap"
                 style={{ left: hoveredDay.x, top: hoveredDay.y }}
               >
                 {hoveredDay.text}
