@@ -46,7 +46,7 @@ export const PLATFORM_CONFIGS = {
   codechef: {
     key: 'codechef',
     title: 'CodeChef',
-    icon: `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.12 6.78l-5.6 5.6-2.52-2.52-1.42 1.42 3.94 3.94 7.02-7.02-1.42-1.42z" fill="#5b4636"/></svg>`, // Basic icon since CodeChef SVGs are complex
+    icon: `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 8.5C16 6.567 14.209 5 12 5C9.791 5 8 6.567 8 8.5C8 8.948 8.077 9.378 8.216 9.778C6.942 10.457 6 11.83 6 13.5C6 15.985 8.015 18 10.5 18H13.5C15.985 18 18 15.985 18 13.5C18 11.83 17.058 10.457 15.784 9.778C15.923 9.378 16 8.948 16 8.5Z" fill="#5b4636"/></svg>`,
     urlPrefix: 'https://www.codechef.com/users/',
     metrics: [
       { key: 'rating', label: 'Rating' },

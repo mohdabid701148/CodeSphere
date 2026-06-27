@@ -5,14 +5,17 @@ let cachedContests = [];
 let lastFetchTime = 0;
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
+const THIRTY_DAYS_SEC = 30 * 24 * 60 * 60;
+
 const fetchCodeforces = async () => {
   try {
     const res = await fetch('https://codeforces.com/api/contest.list?gym=false');
     const data = await res.json();
     if (data.status !== 'OK') return [];
     
+    const nowSec = Math.floor(Date.now() / 1000);
     return data.result
-      .filter(c => c.phase === 'BEFORE')
+      .filter(c => c.startTimeSeconds > nowSec - THIRTY_DAYS_SEC)
       .map(c => ({
         id: `cf-${c.id}`,
         platform: 'codeforces',
@@ -40,12 +43,23 @@ const fetchLeetCode = async () => {
             startTime
             duration
           }
+          pastContests(pageNo: 1, numPerPage: 10) {
+            data {
+              title
+              titleSlug
+              startTime
+              duration
+            }
+          }
         }`
       })
     });
     const data = await res.json();
     
-    return data.data.topTwoContests.map(c => ({
+    const upcoming = data.data.topTwoContests || [];
+    const past = data.data.pastContests?.data || [];
+    
+    return [...upcoming, ...past].map(c => ({
       id: `lc-${c.titleSlug}`,
       platform: 'leetcode',
       title: c.title,
@@ -66,7 +80,8 @@ const fetchAtCoder = async () => {
     const nowSeconds = Math.floor(Date.now() / 1000);
     
     return data
-      .filter(c => c.start_epoch_second > nowSeconds)
+      .filter(c => c.start_epoch_second > nowSeconds - THIRTY_DAYS_SEC)
+      .filter(c => /AtCoder (Beginner|Regular|Grand|Heuristic) Contest/.test(c.title))
       .map(c => ({
         id: `ac-${c.id}`,
         platform: 'atcoder',
@@ -88,14 +103,25 @@ const fetchCodeChef = async () => {
     });
     const data = await res.json();
     
-    return data.future_contests.map(c => ({
-      id: `cc-${c.code}`,
-      platform: 'codechef',
-      title: c.contest_name,
-      startTime: new Date(c.contest_start_date_iso).toISOString(),
-      durationSeconds: parseInt(c.contest_duration) * 60,
-      url: `https://www.codechef.com/${c.code}`
-    }));
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - THIRTY_DAYS_SEC * 1000);
+    
+    const allCc = [
+      ...(data.future_contests || []),
+      ...(data.present_contests || []),
+      ...(data.past_contests || [])
+    ];
+    
+    return allCc
+      .filter(c => new Date(c.contest_start_date_iso) > thirtyDaysAgo)
+      .map(c => ({
+        id: `cc-${c.code}`,
+        platform: 'codechef',
+        title: c.contest_name,
+        startTime: new Date(c.contest_start_date_iso).toISOString(),
+        durationSeconds: parseInt(c.contest_duration) * 60,
+        url: `https://www.codechef.com/${c.code}`
+      }));
   } catch (error) {
     console.error('CodeChef contests fetch error:', error);
     return [];
