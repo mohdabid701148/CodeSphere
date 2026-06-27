@@ -203,6 +203,7 @@ export default function DashboardPage() {
   const getMonthlyCalendarGrid = (lcCalendar = {}, cfCalendar = {}, period = 'Current') => {
     const monthsData = [];
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const generateMonthGrid = (year, month) => {
       const targetDate = new Date(year, month, 1);
@@ -223,14 +224,20 @@ export default function DashboardPage() {
       // Days in the month
       for (let day = 1; day <= totalDays; day++) {
         const currentDate = new Date(year, month, day);
-        const dateStr = currentDate.toISOString().split('T')[0];
-        const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0);
-        dates.push({
-          isPadding: false,
-          date: currentDate,
-          dateStr,
-          count
-        });
+        currentDate.setHours(0, 0, 0, 0);
+        
+        if (currentDate > today) {
+          dates.push({ isPadding: true });
+        } else {
+          const dateStr = currentDate.toISOString().split('T')[0];
+          const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0);
+          dates.push({
+            isPadding: false,
+            date: currentDate,
+            dateStr,
+            count
+          });
+        }
       }
       
       // Padding after last day of month (blank grid squares)
