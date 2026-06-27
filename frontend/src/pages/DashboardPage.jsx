@@ -778,6 +778,16 @@ export default function DashboardPage() {
           </div>
 
           {/* Individual Rating Progression Charts */}
+          <div className="flex justify-between items-end mb-4 px-2">
+            <h4 className="text-sm text-slate-500 font-bold uppercase tracking-wider">Rating Progression</h4>
+            <button
+              disabled={isSyncing}
+              onClick={handleSyncAll}
+              className="text-xs px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold cursor-pointer disabled:opacity-50 transition-colors"
+            >
+              {isSyncing ? 'Refreshing...' : 'Refresh All Stats'}
+            </button>
+          </div>
           {cfHistory && cfHistory.length > 0 && (
             <PlatformRatingChart
               platformName="Codeforces"
