@@ -26,9 +26,15 @@ export default function PlatformRatingChart({
   // and THEN we filter for the view.
   const fullChartData = history.map((item, index) => {
     const delta = index > 0 ? item.value - history[index - 1].value : null;
+    let matchName = `Match ${index + 1}`;
+    if (item.timestamp) {
+      const date = new Date(item.timestamp);
+      // Format as "Jan 15, 2024"
+      matchName = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
     return {
       ...item,
-      matchName: `Match ${index + 1}`,
+      matchName,
       delta
     };
   });
