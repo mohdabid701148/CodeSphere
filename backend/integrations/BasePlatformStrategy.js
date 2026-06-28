@@ -20,4 +20,15 @@ export class BasePlatformStrategy {
   async sync(username) {
     throw new Error('sync must be implemented by subclasses');
   }
+
+  /**
+   * Verify if a user owns the account.
+   * @param {string} username 
+   * @param {string} token 
+   * @param {Date} startedAt - When the verification was initiated
+   * @returns {Promise<boolean>}
+   */
+  async verifyUser(username, token, startedAt) {
+    return false;
+  }
 }

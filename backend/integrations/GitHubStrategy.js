@@ -100,4 +100,16 @@ export class GitHubStrategy extends BasePlatformStrategy {
       history: [],
     };
   }
+
+  async verifyUser(username, token, startedAt) {
+    try {
+      const res = await fetch(`https://api.github.com/repos/${username}/${token}`, {
+        headers: { 'User-Agent': 'CodeSphere-App' }
+      });
+      return res.status === 200;
+    } catch (err) {
+      console.error('GitHub Verification Error:', err);
+      return false;
+    }
+  }
 }

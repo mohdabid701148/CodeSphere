@@ -50,7 +50,6 @@ export class LeetCodeStrategy extends BasePlatformStrategy {
               count
             }
           }
-          submissionCalendar
           badges {
             name
             icon
@@ -108,7 +107,75 @@ export class LeetCodeStrategy extends BasePlatformStrategy {
 
     const data = result.data;
     if (!data || !data.matchedUser) {
-      throw new Error('LeetCode profile fetch failed.');
+      throw new Error('LeetCode user profile stats not found.');
+    }
+
+    // Fetch active years first
+    let activeYears = [new Date().getFullYear()];
+    try {
+      const yearsQuery = `
+        query getActiveYears($username: String!) {
+          matchedUser(username: $username) {
+            userCalendar {
+              activeYears
+            }
+          }
+        }
+      `;
+      const yearsRes = await fetch('https://leetcode.com/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': 'https://leetcode.com',
+        },
+        body: JSON.stringify({ query: yearsQuery, variables: { username } }),
+      });
+      const yearsData = await yearsRes.json();
+      if (yearsData.data?.matchedUser?.userCalendar?.activeYears) {
+        activeYears = yearsData.data.matchedUser.userCalendar.activeYears;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch LeetCode active years:', err.message);
+    }
+
+    // Fetch calendar for all active years
+    let activeDays = 0;
+    const calendarMap = {};
+    for (const year of activeYears) {
+      try {
+        const calQuery = `
+          query getYearCalendar($username: String!, $year: Int!) {
+            matchedUser(username: $username) {
+              userCalendar(year: $year) {
+                totalActiveDays
+                submissionCalendar
+              }
+            }
+          }
+        `;
+        const calRes = await fetch('https://leetcode.com/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Referer': 'https://leetcode.com',
+          },
+          body: JSON.stringify({ query: calQuery, variables: { username, year } }),
+        });
+        const calData = await calRes.json();
+        const userCal = calData.data?.matchedUser?.userCalendar;
+        if (userCal) {
+          activeDays += userCal.totalActiveDays || 0;
+          if (userCal.submissionCalendar) {
+            const calendar = JSON.parse(userCal.submissionCalendar);
+            Object.entries(calendar).forEach(([timestamp, count]) => {
+              const dateStr = new Date(parseInt(timestamp) * 1000).toISOString().split('T')[0];
+              calendarMap[dateStr] = (calendarMap[dateStr] || 0) + count;
+            });
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch LeetCode calendar for year ${year}:`, err.message);
+      }
     }
 
     // 1. Parse solved counts
@@ -153,21 +220,7 @@ export class LeetCodeStrategy extends BasePlatformStrategy {
       });
     });
 
-    // 4. Parse activeDays and calendar from submissionCalendar
-    let activeDays = 0;
-    const calendarMap = {};
-    if (data.matchedUser.submissionCalendar) {
-      try {
-        const calendar = JSON.parse(data.matchedUser.submissionCalendar);
-        activeDays = Object.keys(calendar).length;
-        Object.entries(calendar).forEach(([timestamp, count]) => {
-          const dateStr = new Date(parseInt(timestamp) * 1000).toISOString().split('T')[0];
-          calendarMap[dateStr] = (calendarMap[dateStr] || 0) + count;
-        });
-      } catch (e) {
-        console.error('Failed to parse LeetCode submissionCalendar:', e.message);
-      }
-    }
+
 
     // 5. Parse badges
     const badges = (data.matchedUser.badges || []).map((badge) => ({
@@ -212,5 +265,40 @@ export class LeetCodeStrategy extends BasePlatformStrategy {
       },
       history,
     };
+  }
+
+  async verifyUser(username, token, startedAt) {
+    try {
+      // Instant verification: check if user submitted to "Two Sum" after verification started
+      const query = `
+        query userRecentSubmissions($username: String!, $limit: Int!) {
+          recentSubmissionList(username: $username, limit: $limit) {
+            titleSlug
+            timestamp
+            statusDisplay
+          }
+        }
+      `;
+      const res = await fetch('https://leetcode.com/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': 'https://leetcode.com',
+        },
+        body: JSON.stringify({ query, variables: { username, limit: 20 } }),
+      });
+      const result = await res.json();
+      const submissions = result.data?.recentSubmissionList || [];
+      
+      const startTime = startedAt ? Math.floor(new Date(startedAt).getTime() / 1000) : 0;
+      
+      return submissions.some(sub => 
+        sub.titleSlug === 'two-sum' && 
+        parseInt(sub.timestamp) >= startTime
+      );
+    } catch (err) {
+      console.error('LeetCode Verification Error:', err);
+      return false;
+    }
   }
 }

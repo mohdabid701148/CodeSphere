@@ -141,6 +141,7 @@ export const googleCallback = async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         slug: user.slug,
+        onboardingCompleted: user.onboardingCompleted || false,
       })
     );
 

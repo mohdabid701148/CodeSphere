@@ -72,15 +72,19 @@ export const getProfileBySlug = async (req, res) => {
 };
 
 export const updateProfile = async (req, res) => {
-  const { bio, headline, socialLinks, slug } = req.body;
+  const { name, bio, headline, college, avatar, socialLinks, slug, onboardingCompleted } = req.body;
   const user = await User.findById(req.user._id);
 
   if (!user) {
     throw new ApiError(404, 'User not found');
   }
 
+  if (name !== undefined && name.trim()) user.name = name.trim();
   if (headline !== undefined) user.headline = headline;
   if (bio !== undefined) user.bio = bio;
+  if (college !== undefined) user.college = college;
+  if (avatar !== undefined) user.avatar = avatar.trim();
+  if (onboardingCompleted !== undefined) user.onboardingCompleted = onboardingCompleted;
   if (socialLinks !== undefined) {
     user.socialLinks = {
       linkedin: socialLinks.linkedin || '',

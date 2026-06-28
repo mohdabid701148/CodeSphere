@@ -24,4 +24,10 @@ export const integrationService = {
     const res = await api.patch(`/integrations/${platform}`, { username });
     return res.data;
   },
+
+  // Verify platform ownership using token
+  verify: async (platform) => {
+    const res = await api.post(`/integrations/${platform}/verify`);
+    return res.data;
+  },
 };

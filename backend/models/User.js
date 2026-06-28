@@ -54,6 +54,12 @@ const userSchema = new mongoose.Schema(
       default: '',
       maxLength: 100,
     },
+    college: {
+      type: String,
+      default: '',
+      trim: true,
+      maxLength: 150,
+    },
     socialLinks: {
       linkedin: { type: String, default: '' },
       twitter: { type: String, default: '' },
@@ -67,6 +73,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     isPublic: {
+      type: Boolean,
+      default: false,
+    },
+    onboardingCompleted: {
       type: Boolean,
       default: false,
     },

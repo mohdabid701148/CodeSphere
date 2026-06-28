@@ -19,7 +19,13 @@ const connectedAccountSchema = new mongoose.Schema(
     },
     connected: {
       type: Boolean,
-      default: true,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+    },
+    verificationStartedAt: {
+      type: Date,
     },
     lastSync: {
       type: Date,

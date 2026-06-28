@@ -34,6 +34,14 @@ export const useIntegrations = () => {
     },
   });
 
+  // Mutation to verify integration
+  const verifyMutation = useMutation({
+    mutationFn: (platform) => integrationService.verify(platform),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+    },
+  });
+
   return {
     connections: integrationsQuery.data || [],
     isLoading: integrationsQuery.isLoading,
@@ -42,5 +50,6 @@ export const useIntegrations = () => {
     connectMutation,
     disconnectMutation,
     updateMutation,
+    verifyMutation,
   };
 };

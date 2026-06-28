@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedRoute({ children }) {
-  const { token, loading } = useAuth();
+  const { token, user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -18,6 +19,11 @@ export default function ProtectedRoute({ children }) {
 
   if (!token) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect to onboarding if not completed (except when already on /onboarding)
+  if (user && !user.onboardingCompleted && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return children;

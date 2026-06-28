@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from 'recharts';
 
 export default function PlatformRatingChart({ 
   platformName, 
@@ -11,11 +11,52 @@ export default function PlatformRatingChart({
 }) {
   const [filter, setFilter] = useState('All Time');
 
+  const renderRatingBands = () => {
+    const isCodeforces = platformName.toLowerCase() === 'codeforces';
+    const isAtCoder = platformName.toLowerCase() === 'atcoder';
+
+    if (isCodeforces) {
+      return (
+        <>
+          <ReferenceArea y1={0} y2={1200} fill="#cccccc" fillOpacity={0.35} />
+          <ReferenceArea y1={1200} y2={1400} fill="#77ff77" fillOpacity={0.35} />
+          <ReferenceArea y1={1400} y2={1600} fill="#77ddbb" fillOpacity={0.35} />
+          <ReferenceArea y1={1600} y2={1900} fill="#aaaaff" fillOpacity={0.35} />
+          <ReferenceArea y1={1900} y2={2100} fill="#ff88ff" fillOpacity={0.35} />
+          <ReferenceArea y1={2100} y2={2400} fill="#ffcc88" fillOpacity={0.35} />
+          <ReferenceArea y1={2400} y2={4000} fill="#ff8888" fillOpacity={0.35} />
+        </>
+      );
+    }
+    if (isAtCoder) {
+      return (
+        <>
+          <ReferenceArea y1={0} y2={400} fill="#cccccc" fillOpacity={0.35} />
+          <ReferenceArea y1={400} y2={800} fill="#c6b095" fillOpacity={0.35} />
+          <ReferenceArea y1={800} y2={1200} fill="#77ff77" fillOpacity={0.35} />
+          <ReferenceArea y1={1200} y2={1600} fill="#77dddd" fillOpacity={0.35} />
+          <ReferenceArea y1={1600} y2={2000} fill="#aaaaff" fillOpacity={0.35} />
+          <ReferenceArea y1={2000} y2={2400} fill="#ffff77" fillOpacity={0.35} />
+          <ReferenceArea y1={2400} y2={2800} fill="#ffcc88" fillOpacity={0.35} />
+          <ReferenceArea y1={2800} y2={5000} fill="#ff8888" fillOpacity={0.35} />
+        </>
+      );
+    }
+    return null;
+  };
+
   if (!history || history.length === 0) return null;
+
+  // Pre-sort history by timestamp to ensure chronological order
+  const sortedHistory = [...history].sort((a, b) => {
+    const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return tA - tB;
+  });
 
   // Determine available years from history
   const availableYears = Array.from(new Set(
-    history
+    sortedHistory
       .map(item => item.timestamp ? new Date(item.timestamp).getFullYear() : null)
       .filter(year => year !== null && !isNaN(year))
   )).sort((a, b) => b - a);
@@ -24,17 +65,28 @@ export default function PlatformRatingChart({
 
   // We map from the FULL history to preserve accurate deltas and Match numbers, 
   // and THEN we filter for the view.
-  const fullChartData = history.map((item, index) => {
-    const delta = index > 0 ? item.value - history[index - 1].value : null;
-    let matchName = `Match ${index + 1}`;
+  const fullChartData = sortedHistory.map((item, index) => {
+    const delta = index > 0 ? item.value - sortedHistory[index - 1].value : null;
+    
+    let timestampVal;
     if (item.timestamp) {
-      const date = new Date(item.timestamp);
-      // Format as "Jan 15, 2024"
-      matchName = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      timestampVal = new Date(item.timestamp).getTime();
+    } else {
+      // Fallback: space out matches by 7 days backwards from today or from the next item
+      timestampVal = Date.now() - (sortedHistory.length - index) * 7 * 24 * 60 * 60 * 1000;
     }
+
+    const dateObj = new Date(timestampVal);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+
     return {
       ...item,
-      matchName,
+      timestampVal,
+      formattedDate,
       delta
     };
   });
@@ -47,7 +99,9 @@ export default function PlatformRatingChart({
     } else {
       const year = parseInt(filter);
       if (!isNaN(year)) {
-        displayData = fullChartData.filter(item => item.timestamp && new Date(item.timestamp).getFullYear() === year);
+        displayData = fullChartData.filter(item => {
+          return new Date(item.timestampVal).getFullYear() === year;
+        });
       }
     }
   }
@@ -85,10 +139,19 @@ export default function PlatformRatingChart({
   const theme = getThemeClasses(themeColor);
   const chartId = `color-${platformName.toLowerCase()}`;
 
-  const CustomTooltip = ({ active, payload, label }) => {
+  let strokeColor = themeColor;
+  if (platformName.toLowerCase() === 'codeforces') {
+    strokeColor = '#ffd800'; // Codeforces Yellow line
+  } else if (platformName.toLowerCase() === 'leetcode') {
+    strokeColor = '#ffa116'; // LeetCode Gold line
+  } else if (platformName.toLowerCase() === 'atcoder') {
+    strokeColor = '#222222'; // AtCoder dark line
+  }
+
+  const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const { delta, description, value } = data;
+      const { delta, description, value, formattedDate } = data;
       
       const isPositiveDelta = delta > 0;
       const isNegativeDelta = delta < 0;
@@ -96,8 +159,9 @@ export default function PlatformRatingChart({
       const sign = isPositiveDelta ? '+' : '';
 
       return (
-        <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-md text-[11px] max-w-xs">
-          <div className="text-slate-500 font-bold mb-2 break-words">{label} - {description}</div>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-md text-[11px] max-w-xs text-slate-800">
+          <div className="text-slate-500 font-bold mb-1 break-words">{description}</div>
+          <div className="text-slate-400 mb-2">{formattedDate}</div>
           <div className="flex items-center gap-2">
             <span className="text-slate-900 font-semibold">Rating: {value}</span>
             {delta !== null && (
@@ -181,6 +245,7 @@ export default function PlatformRatingChart({
       <div className="h-64 mt-4 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={displayData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            {renderRatingBands()}
             <defs>
               <linearGradient id={chartId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={themeColor} stopOpacity={0.3}/>
@@ -189,7 +254,13 @@ export default function PlatformRatingChart({
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
             <XAxis 
-              dataKey="matchName" 
+              dataKey="timestampVal" 
+              type="number"
+              domain={['dataMin', 'dataMax']}
+              tickFormatter={(tick) => {
+                const dateObj = new Date(tick);
+                return dateObj.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+              }}
               stroke="#94a3b8" 
               style={{ fontSize: '10px' }} 
               tickMargin={10}
@@ -207,12 +278,12 @@ export default function PlatformRatingChart({
             <Area 
               type="monotone" 
               dataKey="value" 
-              stroke={themeColor} 
+              stroke={strokeColor} 
               strokeWidth={2}
-              fillOpacity={1} 
+              fillOpacity={platformName.toLowerCase() === 'leetcode' ? 1 : 0} 
               fill={`url(#${chartId})`}
-              activeDot={{ r: 6, strokeWidth: 0, fill: themeColor }}
-              dot={{ r: 3, fill: '#fff', stroke: themeColor, strokeWidth: 2 }}
+              activeDot={{ r: 6, strokeWidth: 0, fill: strokeColor }}
+              dot={{ r: 3, fill: '#fff', stroke: strokeColor, strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

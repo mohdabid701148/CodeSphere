@@ -113,4 +113,16 @@ export class AtCoderStrategy extends BasePlatformStrategy {
       history,
     };
   }
+
+  async verifyUser(username, token, startedAt) {
+    try {
+      const res = await fetch(`https://atcoder.jp/users/${username}`);
+      if (res.status === 404) return false;
+      const htmlText = await res.text();
+      return htmlText.includes(token);
+    } catch (err) {
+      console.error('AtCoder Verification Error:', err);
+      return false;
+    }
+  }
 }

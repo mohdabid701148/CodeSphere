@@ -91,4 +91,39 @@ export class CodeforcesStrategy extends BasePlatformStrategy {
       history,
     };
   }
+
+  async verifyUser(username, token, startedAt) {
+    try {
+      // 1. Instant: check if user submitted to problem 4A (Watermelon) after verification started
+      const startTime = startedAt ? Math.floor(new Date(startedAt).getTime() / 1000) : 0;
+      const statusRes = await fetch(`https://codeforces.com/api/user.status?handle=${username}&from=1&count=10`);
+      const statusData = await statusRes.json();
+      if (statusData.status === 'OK' && statusData.result?.length > 0) {
+        const match = statusData.result.some(sub =>
+          sub.problem?.contestId === 4 &&
+          sub.problem?.index === 'A' &&
+          sub.creationTimeSeconds >= startTime
+        );
+        if (match) return true;
+      }
+
+      // 2. Fallback: profile token check
+      const res = await fetch(`https://codeforces.com/api/user.info?handles=${username}`);
+      const data = await res.json();
+      if (data.status === 'OK' && data.result?.length > 0) {
+        const info = data.result[0];
+        const fields = [
+          info.firstName || '',
+          info.lastName || '',
+          info.organization || '',
+        ];
+        if (fields.some(f => f.includes(token))) return true;
+      }
+
+      return false;
+    } catch (err) {
+      console.error('Codeforces Verification Error:', err);
+      return false;
+    }
+  }
 }

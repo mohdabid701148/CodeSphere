@@ -8,6 +8,7 @@ import IntegrationsPage from './pages/IntegrationsPage';
 import PublicProfilePage from './pages/PublicProfilePage';
 import EventTrackerPage from './pages/EventTrackerPage';
 import CompanyKitPage from './pages/CompanyKitPage';
+import OnboardingPage from './pages/OnboardingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -32,6 +33,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <IntegrationsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/onboarding" 
+              element={
+                <ProtectedRoute>
+                  <OnboardingPage />
                 </ProtectedRoute>
               } 
             />

@@ -31,7 +31,13 @@ export default function LoginPage() {
       try {
         const parsedUser = JSON.parse(decodeURIComponent(queryUser));
         login(queryAccessToken, queryRefreshToken, parsedUser);
-        navigate('/dashboard', { replace: true });
+
+        // Redirect new users to onboarding, existing users to dashboard
+        if (!parsedUser.onboardingCompleted) {
+          navigate('/onboarding', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       } catch (err) {
         console.error('Failed to parse redirected user data', err);
         setErrorMsg('Failed to process login data.');

@@ -40,6 +40,8 @@ export default function DashboardPage() {
     headline: user?.headline || '',
     bio: user?.bio || '',
     slug: user?.slug || '',
+    college: user?.college || '',
+    avatar: user?.avatar || '',
     linkedin: user?.socialLinks?.linkedin || '',
     twitter: user?.socialLinks?.twitter || '',
     website: user?.socialLinks?.website || '',
@@ -83,6 +85,38 @@ export default function DashboardPage() {
       },
       onError: (err) => showToast('error', err.response?.data?.message || 'Failed to update profile.')
     });
+  };
+
+  const handleToggleEdit = () => {
+    if (!isEditing && user) {
+      setEditForm({
+        headline: user.headline || '',
+        bio: user.bio || '',
+        slug: user.slug || '',
+        college: user.college || '',
+        avatar: user.avatar || '',
+        linkedin: user.socialLinks?.linkedin || '',
+        twitter: user.socialLinks?.twitter || '',
+        website: user.socialLinks?.website || '',
+      });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('error', 'Image file size must be less than 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditForm(prev => ({ ...prev, avatar: reader.result }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleTogglePrivacy = () => {
@@ -173,12 +207,12 @@ export default function DashboardPage() {
   const getFlatCalendarData = (lcCalendar = {}, cfCalendar = {}, acCalendar = {}, period = 'Current') => {
     const dates = [];
     const today = new Date();
+    const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
     
     if (period === 'Current') {
-      const startDate = new Date();
-      startDate.setDate(today.getDate() - 180);
-      const currentDate = new Date(startDate);
-      while (currentDate <= today) {
+      const startDateUTC = new Date(todayUTC.getTime() - 180 * 24 * 60 * 60 * 1000);
+      const currentDate = new Date(startDateUTC);
+      while (currentDate <= todayUTC) {
         const dateStr = currentDate.toISOString().split('T')[0];
         const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0) + (acCalendar[dateStr] || 0);
         dates.push({
@@ -186,14 +220,14 @@ export default function DashboardPage() {
           dateStr,
           count
         });
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
     } else {
       const selectedYear = parseInt(period);
-      const startDate = new Date(selectedYear, 0, 1);
-      const endDate = new Date(selectedYear, 11, 31);
-      const currentDate = new Date(startDate);
-      while (currentDate <= endDate) {
+      const startDateUTC = new Date(Date.UTC(selectedYear, 0, 1));
+      const endDateUTC = new Date(Date.UTC(selectedYear, 11, 31));
+      const currentDate = new Date(startDateUTC);
+      while (currentDate <= endDateUTC) {
         const dateStr = currentDate.toISOString().split('T')[0];
         const count = (lcCalendar[dateStr] || 0) + (cfCalendar[dateStr] || 0) + (acCalendar[dateStr] || 0);
         dates.push({
@@ -201,7 +235,7 @@ export default function DashboardPage() {
           dateStr,
           count
         });
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
     }
     return dates;
@@ -218,16 +252,15 @@ export default function DashboardPage() {
   const getMonthlyCalendarGrid = (lcCalendar = {}, cfCalendar = {}, acCalendar = {}, period = 'Current') => {
     const monthsData = [];
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
 
     const generateMonthGrid = (year, month) => {
-      const targetDate = new Date(year, month, 1);
-      const firstDay = new Date(year, month, 1);
-      const firstDayOfWeek = firstDay.getDay(); // 0 is Sunday
+      const targetDate = new Date(Date.UTC(year, month, 1));
+      const firstDayOfWeek = targetDate.getUTCDay(); // 0 is Sunday
       
-      const lastDay = new Date(year, month + 1, 0);
-      const totalDays = lastDay.getDate();
-      const lastDayOfWeek = lastDay.getDay();
+      const lastDay = new Date(Date.UTC(year, month + 1, 0));
+      const totalDays = lastDay.getUTCDate();
+      const lastDayOfWeek = lastDay.getUTCDay();
       
       const dates = [];
       
@@ -238,10 +271,9 @@ export default function DashboardPage() {
       
       // Days in the month
       for (let day = 1; day <= totalDays; day++) {
-        const currentDate = new Date(year, month, day);
-        currentDate.setHours(0, 0, 0, 0);
+        const currentDate = new Date(Date.UTC(year, month, day));
         
-        if (currentDate > today) {
+        if (currentDate > todayUTC) {
           dates.push({ isPadding: true });
         } else {
           const dateStr = currentDate.toISOString().split('T')[0];
@@ -261,7 +293,7 @@ export default function DashboardPage() {
       }
       
       return {
-        monthName: targetDate.toLocaleString('default', { month: 'short' }),
+        monthName: targetDate.toLocaleString('default', { month: 'short', timeZone: 'UTC' }),
         dates
       };
     };
@@ -269,8 +301,8 @@ export default function DashboardPage() {
     if (period === 'Current') {
       // Generate the last 6 months (including current month)
       for (let m = 5; m >= 0; m--) {
-        const targetDate = new Date(today.getFullYear(), today.getMonth() - m, 1);
-        monthsData.push(generateMonthGrid(targetDate.getFullYear(), targetDate.getMonth()));
+        const targetDate = new Date(Date.UTC(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth() - m, 1));
+        monthsData.push(generateMonthGrid(targetDate.getUTCFullYear(), targetDate.getUTCMonth()));
       }
     } else {
       // Generate full year (January to December)
@@ -289,6 +321,31 @@ export default function DashboardPage() {
     atcoderStats?.additionalMetrics?.calendar,
     selectedPeriod
   );
+
+  const getAvailableYears = () => {
+    const yearsSet = new Set();
+    const lcCal = leetcodeStats?.additionalMetrics?.calendar || {};
+    const cfCal = codeforcesStats?.additionalMetrics?.calendar || {};
+    const acCal = atcoderStats?.additionalMetrics?.calendar || {};
+    
+    Object.keys(lcCal).forEach(k => {
+      const yr = k.split('-')[0];
+      if (yr && /^\d{4}$/.test(yr)) yearsSet.add(yr);
+    });
+    Object.keys(cfCal).forEach(k => {
+      const yr = k.split('-')[0];
+      if (yr && /^\d{4}$/.test(yr)) yearsSet.add(yr);
+    });
+    Object.keys(acCal).forEach(k => {
+      const yr = k.split('-')[0];
+      if (yr && /^\d{4}$/.test(yr)) yearsSet.add(yr);
+    });
+    
+    const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+    return ['Current', ...sortedYears];
+  };
+
+  const periodOptions = getAvailableYears();
 
   // Compute streaks
   const calculateStreaks = (dates) => {
@@ -371,6 +428,9 @@ export default function DashboardPage() {
 
             <div className="pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-500">
               <p>{user?.bio || 'Passionate developer showcasing stats.'}</p>
+              {user?.college && (
+                <p className="text-slate-600 font-semibold">🎓 {user.college}</p>
+              )}
               {user?.socialLinks?.linkedin && (
                 <p className="truncate">💼 <a href={user.socialLinks.linkedin} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">LinkedIn</a></p>
               )}
@@ -384,7 +444,7 @@ export default function DashboardPage() {
 
             <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
               <button
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={handleToggleEdit}
                 className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition"
               >
                 {isEditing ? 'Cancel Edit' : '✍️ Edit Details'}
@@ -500,6 +560,46 @@ export default function DashboardPage() {
                   />
                 </div>
 
+                <div className="space-y-1">
+                  <label className="text-slate-500 font-semibold block">College / Institution</label>
+                  <input
+                    type="text"
+                    value={editForm.college}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, college: e.target.value }))}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl"
+                    placeholder="e.g. Delhi Technological University"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-500 font-semibold block">Profile Photo</label>
+                  <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <img
+                      src={editForm.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=Developer'}
+                      alt="Avatar Preview"
+                      className="w-14 h-14 rounded-full border border-slate-200 object-cover bg-white"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <label
+                        htmlFor="avatar-upload"
+                        className="inline-block px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-[11px] font-semibold rounded-lg hover:bg-slate-50 cursor-pointer shadow-sm transition"
+                      >
+                        Upload Photo
+                      </label>
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <span className="text-[10px] text-slate-400 block leading-tight">
+                        Recommended: Square image, max 2MB
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <label className="text-slate-500 font-semibold block">LinkedIn Link</label>
@@ -600,7 +700,7 @@ export default function DashboardPage() {
 
                   {isPeriodDropdownOpen && (
                     <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 shadow-lg rounded-xl py-1.5 w-28 z-50 text-slate-800 text-left font-medium">
-                      {['Current', '2026', '2025'].map((p) => (
+                      {periodOptions.map((p) => (
                         <div
                           key={p}
                           onClick={(e) => {
@@ -639,8 +739,9 @@ export default function DashboardPage() {
                           else if (d.count > 5 && d.count <= 9) color = '#239A3B'; // Solid green
                           else if (d.count > 9) color = '#196127';                 // Dark green
 
-                          const formattedDateStr = d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                          const tooltipText = `${d.count} submission${d.count !== 1 ? 's' : ''} on ${formattedDateStr}`;
+                          const padZero = (n) => n.toString().padStart(2, '0');
+                          const formattedDateStr = `${padZero(d.date.getUTCDate())}/${padZero(d.date.getUTCMonth() + 1)}/${d.date.getUTCFullYear()}`;
+                          const tooltipText = `${d.count} Submission${d.count !== 1 ? 's' : ''} on ${formattedDateStr}`;
 
                           return (
                             <div
