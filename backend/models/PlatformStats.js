@@ -9,7 +9,7 @@ const platformStatsSchema = new mongoose.Schema({
   platform: {
     type: String,
     required: true,
-    enum: ['github', 'codeforces', 'leetcode', 'atcoder'],
+    enum: ['github', 'codeforces', 'leetcode', 'atcoder', 'codechef'],
   },
   rating: {
     type: Number,

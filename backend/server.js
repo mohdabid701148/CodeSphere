@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import connectDB from './config/db.js';
+import redisClient from './config/redis.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 import authRouter from './routes/auth.js';
 import integrationsRouter from './routes/integrations.js';
@@ -78,10 +79,11 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     database: {
-      status: dbStateMap[dbStatus] || 'unknown',
-      code: dbStatus
+      status: dbStateMap[dbStatus],
     },
-    env: process.env.NODE_ENV || 'development'
+    redis: {
+      status: 'REST API Active',
+    }
   });
 });
 

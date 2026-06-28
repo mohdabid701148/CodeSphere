@@ -1,9 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
+import redisClient from '../config/redis.js';
 
-// Simple in-memory cache
-let cachedContests = [];
-let lastFetchTime = 0;
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_SEC = 3600; // 1 hour
 
 const THIRTY_DAYS_SEC = 30 * 24 * 60 * 60;
 
@@ -129,10 +127,14 @@ const fetchCodeChef = async () => {
 };
 
 export const getUpcomingContests = asyncHandler(async (req, res) => {
-  const now = Date.now();
-  
-  if (cachedContests.length > 0 && (now - lastFetchTime) < CACHE_TTL) {
-    return res.status(200).json(cachedContests);
+  // Check Redis cache first
+  try {
+    const cached = await redisClient.get('contests:all');
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+  } catch (err) {
+    console.error('Redis GET Error:', err.message);
   }
 
   // Fetch all in parallel
@@ -146,8 +148,14 @@ export const getUpcomingContests = asyncHandler(async (req, res) => {
   const allContests = [...cf, ...lc, ...ac, ...cc]
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-  cachedContests = allContests;
-  lastFetchTime = now;
+  // Save to Redis
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      await redisClient.setex('contests:all', CACHE_TTL_SEC, allContests);
+    }
+  } catch (err) {
+    console.error('Redis SETEX Error:', err.message);
+  }
 
   res.status(200).json(allContests);
 });

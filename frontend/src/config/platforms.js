@@ -51,6 +51,7 @@ export const PLATFORM_CONFIGS = {
     metrics: [
       { key: 'rating', label: 'Rating' },
       { key: 'rank', label: 'Rank Tier' },
+      { key: 'solvedCount', label: 'Problems Solved' },
     ],
   },
 };

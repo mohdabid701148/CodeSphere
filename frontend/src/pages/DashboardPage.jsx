@@ -124,24 +124,25 @@ export default function DashboardPage() {
     );
   }
 
-  const { connections = [], githubStats, codeforcesStats, leetcodeStats, atcoderStats, allStats = [], syncLogs = [] } = dashData || {};
+  const { connections = [], githubStats, codeforcesStats, leetcodeStats, atcoderStats, codechefStats, allStats = [], syncLogs = [] } = dashData || {};
   const isSyncing = syncMutation.status === 'pending';
 
   // Find connections
   const getPlatformConn = (platform) => connections.find(c => c.platform === platform && c.connected);
 
   // Compute aggregated stats
-  const totalSolved = (leetcodeStats?.solvedCount || 0) + (codeforcesStats?.solvedCount || 0) + (atcoderStats?.solvedCount || 0);
-  const totalContests = (leetcodeStats?.contestsCount || 0) + (codeforcesStats?.contestsCount || 0) + (atcoderStats?.contestsCount || 0);
-  const totalActiveDays = (leetcodeStats?.additionalMetrics?.activeDays || 0) + (codeforcesStats?.additionalMetrics?.activeDays || 0) + (atcoderStats?.additionalMetrics?.activeDays || 0);
-  const cpSolved = (codeforcesStats?.solvedCount || 0) + (atcoderStats?.solvedCount || 0);
+  const totalSolved = (leetcodeStats?.solvedCount || 0) + (codeforcesStats?.solvedCount || 0) + (atcoderStats?.solvedCount || 0) + (codechefStats?.solvedCount || 0);
+  const totalContests = (leetcodeStats?.contestsCount || 0) + (codeforcesStats?.contestsCount || 0) + (atcoderStats?.contestsCount || 0) + (codechefStats?.contestsCount || 0);
+  const totalActiveDays = (leetcodeStats?.additionalMetrics?.activeDays || 0) + (codeforcesStats?.additionalMetrics?.activeDays || 0) + (atcoderStats?.additionalMetrics?.activeDays || 0) + (codechefStats?.additionalMetrics?.activeDays || 0);
+  const cpSolved = (codeforcesStats?.solvedCount || 0) + (atcoderStats?.solvedCount || 0) + (codechefStats?.solvedCount || 0);
 
   // Prepare unified rating chart data
   const cfHistory = codeforcesStats?.history || [];
   const lcHistory = leetcodeStats?.history || [];
   const acHistory = atcoderStats?.history || [];
+  const ccHistory = codechefStats?.history || [];
   
-  const chartDataLength = Math.max(cfHistory.length, lcHistory.length, acHistory.length);
+  const chartDataLength = Math.max(cfHistory.length, lcHistory.length, acHistory.length, ccHistory.length);
   const unifiedChartData = [];
   for (let i = 0; i < chartDataLength; i++) {
     const dataPoint = { name: `Match ${i + 1}` };
@@ -156,6 +157,10 @@ export default function DashboardPage() {
     if (i < acHistory.length) {
       dataPoint.AtCoder = acHistory[i].value;
       dataPoint.acContest = acHistory[i].description;
+    }
+    if (i < ccHistory.length) {
+      dataPoint.CodeChef = ccHistory[i].value;
+      dataPoint.ccContest = ccHistory[i].description;
     }
     unifiedChartData.push(dataPoint);
   }
@@ -753,7 +758,8 @@ export default function DashboardPage() {
                         <Pie
                           data={cpSolved > 0 ? [
                             { name: 'Codeforces', value: codeforcesStats?.solvedCount || 0, color: '#facc15' },
-                            { name: 'AtCoder', value: atcoderStats?.solvedCount || 0, color: '#222222' }
+                            { name: 'AtCoder', value: atcoderStats?.solvedCount || 0, color: '#222222' },
+                            { name: 'CodeChef', value: codechefStats?.solvedCount || 0, color: '#5b4636' }
                           ].filter(d => d.value > 0) : [{ name: 'None', value: 1, color: '#f1f5f9' }]}
                           innerRadius={45}
                           outerRadius={60}
@@ -762,7 +768,8 @@ export default function DashboardPage() {
                         >
                           {(cpSolved > 0 ? [
                             { name: 'Codeforces', value: codeforcesStats?.solvedCount || 0, color: '#facc15' },
-                            { name: 'AtCoder', value: atcoderStats?.solvedCount || 0, color: '#222222' }
+                            { name: 'AtCoder', value: atcoderStats?.solvedCount || 0, color: '#222222' },
+                            { name: 'CodeChef', value: codechefStats?.solvedCount || 0, color: '#5b4636' }
                           ].filter(d => d.value > 0) : [{ name: 'None', value: 1, color: '#f1f5f9' }]).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -775,7 +782,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Stats Pills */}
-                  <div className="flex-1 max-w-[140px] space-y-2">
+                  <div className="flex-1 max-w-[140px] space-y-2 overflow-y-auto max-h-[80px] pr-1 sidebar-scroll">
                     <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
                       <span className="text-xs font-semibold text-amber-500">Codeforces</span>
                       <span className="text-xs font-bold text-slate-700">{codeforcesStats?.solvedCount || 0}</span>
@@ -783,6 +790,10 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
                       <span className="text-xs font-semibold text-slate-900">AtCoder</span>
                       <span className="text-xs font-bold text-slate-700">{atcoderStats?.solvedCount || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100">
+                      <span className="text-xs font-semibold text-[#5b4636]">CodeChef</span>
+                      <span className="text-xs font-bold text-slate-700">{codechefStats?.solvedCount || 0}</span>
                     </div>
                   </div>
 

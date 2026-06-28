@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import IntegrationsPage from './pages/IntegrationsPage';
 import PublicProfilePage from './pages/PublicProfilePage';
 import EventTrackerPage from './pages/EventTrackerPage';
+import CompanyKitPage from './pages/CompanyKitPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
             />
             <Route path="/profile/:slug" element={<PublicProfilePage />} />
             <Route path="/events" element={<EventTrackerPage />} />
+            <Route path="/company-kit" element={<CompanyKitPage />} />
           </Routes>
         </main>
         <footer className="mt-16 text-center text-gray-500 text-xs py-4 border-t border-white/5">

@@ -1,7 +1,9 @@
 import ConnectedAccount from '../models/ConnectedAccount.js';
 import PlatformStats from '../models/PlatformStats.js';
+
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { getPlatformStrategy, getSupportedPlatforms } from '../integrations/index.js';
 
 export const connectPlatform = async (req, res) => {

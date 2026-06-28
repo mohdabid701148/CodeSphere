@@ -8,6 +8,21 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true, // Allows multiple null/undefined values
     },
+    leetcodeHandle: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    codechefHandle: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    atcoderHandle: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     name: {
       type: String,
       required: true,
