@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import crypto from 'crypto';
 
 // Helper function to generate and save access and refresh tokens
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -41,10 +42,19 @@ export const initiateLogin = async (req, res) => {
       throw new Error(`Google OAuth credentials are not configured. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env. Details: ${details}`);
     }
 
+    // Generate random state parameter to prevent OAuth CSRF
+    const state = crypto.randomBytes(16).toString('hex');
+    res.cookie('oauth_state', state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 300000 // 5 minutes
+    });
+
     const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback`;
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(
       redirectUri
-    )}&scope=openid%20profile%20email`;
+    )}&scope=openid%20profile%20email&state=${state}`;
 
     console.log('REDIRECTING TO:', googleAuthUrl);
     res.redirect(googleAuthUrl);
@@ -56,9 +66,29 @@ export const initiateLogin = async (req, res) => {
 };
 
 export const googleCallback = async (req, res) => {
-  const { code } = req.query;
+  const { code, state } = req.query;
   if (!code) {
     throw new ApiError(400, 'Authorization code is missing');
+  }
+
+  // Validate state parameter to prevent CSRF
+  if (!(process.env.MOCK_AUTH === 'true' && code === 'mock_code')) {
+    const getCookie = (request, name) => {
+      const cookieHeader = request.headers.cookie;
+      if (!cookieHeader) return null;
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [key, val] = cookie.trim().split('=');
+        acc[key] = val;
+        return acc;
+      }, {});
+      return cookies[name] || null;
+    };
+
+    const stateCookie = getCookie(req, 'oauth_state');
+    if (!state || !stateCookie || state !== stateCookie) {
+      throw new ApiError(400, 'Invalid state parameter. Possible OAuth CSRF detected.');
+    }
+    res.clearCookie('oauth_state');
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
