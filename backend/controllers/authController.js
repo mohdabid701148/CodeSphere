@@ -139,7 +139,6 @@ export const googleCallback = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        avatar: user.avatar,
         slug: user.slug,
         onboardingCompleted: user.onboardingCompleted || false,
       })
