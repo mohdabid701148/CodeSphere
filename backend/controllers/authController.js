@@ -174,13 +174,13 @@ export const googleCallback = async (req, res) => {
       })
     );
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     res.redirect(
       `${frontendUrl}/login?accessToken=${accessToken}&refreshToken=${refreshToken}&user=${userPayload}`
     );
   } catch (error) {
     console.error('OAuth Callback Error:', error);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     // Use a generic error message to prevent leaking sensitive backend error details
     const safeErrorMessage = 'Authentication failed. Please try again or use another login method.';
     res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(safeErrorMessage)}`);
