@@ -28,6 +28,9 @@ if (missingEnvVars.length > 0) {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy headers for secure HTTPS redirect URIs and cookies behind reverse proxies (like Render)
+app.set('trust proxy', 1);
+
 // Connect Database
 connectDB();
 
