@@ -5,9 +5,14 @@ const CACHE_TTL_SEC = 3600; // 1 hour
 
 const THIRTY_DAYS_SEC = 30 * 24 * 60 * 60;
 
+// Timeout for each external API call (ms)
+const FETCH_TIMEOUT_MS = 10000;
+
 const fetchCodeforces = async () => {
   try {
-    const res = await fetch('https://codeforces.com/api/contest.list?gym=false');
+    const res = await fetch('https://codeforces.com/api/contest.list?gym=false', {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    });
     const data = await res.json();
     if (data.status !== 'OK') return [];
     
@@ -23,7 +28,7 @@ const fetchCodeforces = async () => {
         url: `https://codeforces.com/contest/${c.id}`
       }));
   } catch (error) {
-    console.error('Codeforces contests fetch error:', error);
+    console.error('Codeforces contests fetch error:', error.name === 'TimeoutError' ? 'Request timed out' : error);
     return [];
   }
 };
@@ -33,6 +38,7 @@ const fetchLeetCode = async () => {
     const res = await fetch('https://leetcode.com/graphql', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       body: JSON.stringify({
         query: `{
           topTwoContests {
@@ -66,14 +72,16 @@ const fetchLeetCode = async () => {
       url: `https://leetcode.com/contest/${c.titleSlug}`
     }));
   } catch (error) {
-    console.error('LeetCode contests fetch error:', error);
+    console.error('LeetCode contests fetch error:', error.name === 'TimeoutError' ? 'Request timed out' : error);
     return [];
   }
 };
 
 const fetchAtCoder = async () => {
   try {
-    const res = await fetch('https://kenkoooo.com/atcoder/resources/contests.json');
+    const res = await fetch('https://kenkoooo.com/atcoder/resources/contests.json', {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    });
     const data = await res.json();
     const nowSeconds = Math.floor(Date.now() / 1000);
     
@@ -89,7 +97,7 @@ const fetchAtCoder = async () => {
         url: `https://atcoder.jp/contests/${c.id}`
       }));
   } catch (error) {
-    console.error('AtCoder contests fetch error:', error);
+    console.error('AtCoder contests fetch error:', error.name === 'TimeoutError' ? 'Request timed out' : error);
     return [];
   }
 };
@@ -97,7 +105,8 @@ const fetchAtCoder = async () => {
 const fetchCodeChef = async () => {
   try {
     const res = await fetch('https://www.codechef.com/api/list/contests/all', {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
     });
     const data = await res.json();
     
@@ -121,7 +130,7 @@ const fetchCodeChef = async () => {
         url: `https://www.codechef.com/${c.code}`
       }));
   } catch (error) {
-    console.error('CodeChef contests fetch error:', error);
+    console.error('CodeChef contests fetch error:', error.name === 'TimeoutError' ? 'Request timed out' : error);
     return [];
   }
 };
@@ -129,28 +138,32 @@ const fetchCodeChef = async () => {
 export const getUpcomingContests = asyncHandler(async (req, res) => {
   // Check Redis cache first
   try {
-    const cached = await redisClient.get('contests:all');
-    if (cached) {
-      return res.status(200).json(cached);
+    if (redisClient) {
+      const cached = await redisClient.get('contests:all');
+      if (cached) {
+        return res.status(200).json(cached);
+      }
     }
   } catch (err) {
     console.error('Redis GET Error:', err.message);
   }
 
-  // Fetch all in parallel
-  const [cf, lc, ac, cc] = await Promise.all([
+  // Fetch all in parallel - use allSettled so one failure doesn't block everything
+  const results = await Promise.allSettled([
     fetchCodeforces(),
     fetchLeetCode(),
     fetchAtCoder(),
     fetchCodeChef()
   ]);
 
+  const [cf, lc, ac, cc] = results.map(r => r.status === 'fulfilled' ? r.value : []);
+
   const allContests = [...cf, ...lc, ...ac, ...cc]
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
   // Save to Redis
   try {
-    if (process.env.UPSTASH_REDIS_REST_URL) {
+    if (redisClient) {
       await redisClient.setex('contests:all', CACHE_TTL_SEC, allContests);
     }
   } catch (err) {

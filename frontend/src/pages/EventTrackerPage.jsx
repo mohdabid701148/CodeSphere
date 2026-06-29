@@ -59,7 +59,7 @@ const EventTrackerPage = () => {
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        const res = await api.get('/contests/upcoming');
+        const res = await api.get('/contests/upcoming', { timeout: 30000 });
         setContests(res.data);
       } catch (err) {
         setError(err.response?.data?.error || err.message || 'Failed to fetch contests');
