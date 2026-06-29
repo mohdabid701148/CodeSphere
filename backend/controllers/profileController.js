@@ -21,7 +21,7 @@ export const getProfileBySlug = async (req, res) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '');
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         if (decoded._id === user._id.toString()) {
           isOwner = true;
         }

@@ -10,8 +10,14 @@ export const connectPlatform = async (req, res) => {
   const { platform } = req.params;
   const { username } = req.body;
 
-  if (!username) {
-    throw new ApiError(400, 'Username is required');
+  if (!username || typeof username !== 'string') {
+    throw new ApiError(400, 'Username is required and must be a string');
+  }
+
+  const cleanUsername = username.trim();
+  const usernameRegex = /^[a-zA-Z0-9-_.]+$/;
+  if (!usernameRegex.test(cleanUsername)) {
+    throw new ApiError(400, 'Invalid characters in username. Only alphanumeric, dashes, underscores, and dots are allowed.');
   }
 
   const supportedPlatforms = getSupportedPlatforms();
@@ -21,7 +27,7 @@ export const connectPlatform = async (req, res) => {
 
   // Run validation checks via strategy class
   const strategy = getPlatformStrategy(platform);
-  const validationResult = await strategy.validateUser(username);
+  const validationResult = await strategy.validateUser(cleanUsername);
 
   if (!validationResult.valid) {
     throw new ApiError(400, validationResult.message || `Invalid ${platform} username.`);
@@ -34,7 +40,7 @@ export const connectPlatform = async (req, res) => {
   let account = await ConnectedAccount.findOne({ userId: req.user._id, platform });
 
   if (account) {
-    account.username = username;
+    account.username = cleanUsername;
     account.connected = false; // set to false pending verification
     account.verificationToken = verificationToken;
     account.verificationStartedAt = verificationStartedAt;
@@ -44,7 +50,7 @@ export const connectPlatform = async (req, res) => {
     account = await ConnectedAccount.create({
       userId: req.user._id,
       platform,
-      username,
+      username: cleanUsername,
       connected: false,
       verificationToken,
       verificationStartedAt,
@@ -129,15 +135,23 @@ export const updateConnection = async (req, res) => {
     throw new ApiError(404, `No connected ${platform} profile found to update.`);
   }
 
-  if (username && username !== account.username) {
+  if (username !== undefined && username !== account.username) {
+    if (typeof username !== 'string' || !username.trim()) {
+      throw new ApiError(400, 'Username must be a valid non-empty string');
+    }
+    const cleanUsername = username.trim();
+    const usernameRegex = /^[a-zA-Z0-9-_.]+$/;
+    if (!usernameRegex.test(cleanUsername)) {
+      throw new ApiError(400, 'Invalid characters in username. Only alphanumeric, dashes, underscores, and dots are allowed.');
+    }
     const strategy = getPlatformStrategy(platform);
-    const validationResult = await strategy.validateUser(username);
+    const validationResult = await strategy.validateUser(cleanUsername);
 
     if (!validationResult.valid) {
       throw new ApiError(400, validationResult.message || `Invalid username for ${platform}`);
     }
 
-    account.username = username;
+    account.username = cleanUsername;
     account.syncStatus = 'idle';
   }
 

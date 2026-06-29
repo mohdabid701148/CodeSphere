@@ -200,7 +200,7 @@ export const getMe = async (req, res) => {
 export const logoutUser = async (req, res) => {
   const { refreshToken } = req.body;
 
-  if (refreshToken) {
+  if (refreshToken && typeof refreshToken === 'string') {
     // Clear refresh token in database to prevent hijacking session
     await User.findOneAndUpdate(
       { refreshToken },
