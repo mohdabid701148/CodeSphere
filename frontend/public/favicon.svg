@@ -1,32 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
   <defs>
-    <linearGradient id="cubeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#6366F1;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="topGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#818CF8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
     </linearGradient>
+
+    <linearGradient id="topFaceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C4B5FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A78BFA;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="rightFaceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6D28D9;stop-opacity:1" />
+    </linearGradient>
+
+    <filter id="shadowFilter" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.2" flood-color="#000000"/>
+    </filter>
+
+    <filter id="glowFilter">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
-  <!-- Cube faces -->
-  <!-- Left face -->
-  <polygon points="32,64 32,96 64,112 64,80" fill="url(#cubeGradient)" opacity="0.9"/>
+  <!-- Background for better visibility at small sizes -->
+  <rect width="180" height="180" fill="transparent"/>
 
-  <!-- Right face -->
-  <polygon points="64,80 64,112 96,96 96,64" fill="#6366F1" opacity="0.7"/>
+  <!-- Main cube with shadow -->
+  <g filter="url(#shadowFilter)">
+    <!-- Left face (darker) -->
+    <polygon points="45,95 45,135 85,155 85,115" fill="url(#primaryGradient)" opacity="0.95" stroke="#6D28D9" stroke-width="0.5"/>
 
-  <!-- Top face -->
-  <polygon points="32,64 64,48 96,64 64,80" fill="url(#topGradient)" opacity="1"/>
+    <!-- Right face (darkest) -->
+    <polygon points="85,115 85,155 125,135 125,95" fill="url(#rightFaceGradient)" opacity="0.85" stroke="#5B21B6" stroke-width="0.5"/>
 
-  <!-- Code bracket symbol -->
-  <g transform="translate(64, 64)">
-    <!-- Left bracket -->
-    <path d="M -12 -8 L -16 -8 L -16 8 L -12 8" stroke="#FFFFFF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <!-- Right bracket -->
-    <path d="M 12 -8 L 16 -8 L 16 8 L 12 8" stroke="#FFFFFF" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <!-- Center slash -->
-    <line x1="-2" y1="-6" x2="2" y2="6" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Top face (lightest) -->
+    <polygon points="45,95 85,65 125,95 85,115" fill="url(#topFaceGradient)" opacity="1" stroke="#A78BFA" stroke-width="0.5"/>
+  </g>
+
+  <!-- Code brackets symbol in the center -->
+  <g transform="translate(85, 100)" opacity="0.95" filter="url(#glowFilter)">
+    <!-- Left angle bracket -->
+    <path d="M -18 -12 L -24 -6 L -18 0 L -24 6 L -18 12"
+          stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Right angle bracket -->
+    <path d="M 18 -12 L 24 -6 L 18 0 L 24 6 L 18 12"
+          stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Center dot/line -->
+    <circle cx="0" cy="0" r="2.5" fill="#FFFFFF" opacity="0.9"/>
+  </g>
+
+  <!-- Accent highlights for depth -->
+  <g opacity="0.3">
+    <line x1="45" y1="95" x2="85" y2="65" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"/>
+    <line x1="85" y1="65" x2="125" y2="95" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"/>
   </g>
 </svg>
